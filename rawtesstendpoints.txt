@@ -1,0 +1,370 @@
+Fsociety Cybersecurity Platform API
+ 2.0.0 
+OAS 3.1
+/openapi.json
+Advanced cybersecurity scanning and analysis platform
+
+
+Authorize
+Authentication
+
+
+POST
+/api/auth/signup
+Signup
+
+
+POST
+/api/auth/login
+Login
+
+
+POST
+/api/auth/logout
+Logout
+
+
+
+POST
+/api/auth/refresh
+Refresh Token
+
+
+GET
+/api/auth/me
+Get Me
+
+
+
+GET
+/api/auth/all
+Get All Users
+
+User Management
+
+
+GET
+/api/user/profile
+Get Profile
+
+
+
+PUT
+/api/user/profile
+Update Profile
+
+
+
+PUT
+/api/user/password
+Change Password
+
+
+
+DELETE
+/api/user/account
+Delete Account
+
+
+
+GET
+/api/user/activities
+Get Activities
+
+
+
+GET
+/api/user/stats
+Get Stats
+
+
+Admin
+
+
+GET
+/api/admin/users
+Get Users
+
+
+
+PUT
+/api/admin/users/{user_id}
+Update User
+
+
+
+DELETE
+/api/admin/users/{user_id}
+Delete User
+
+
+
+GET
+/api/admin/stats
+Get Platform Stats
+
+
+
+GET
+/api/admin/activities
+Search Activities
+
+
+Scanning
+
+
+POST
+/api/scans/domain
+Scan Domain
+
+
+
+POST
+/api/scans/whois
+Scan Whois
+
+
+
+POST
+/api/scans/dns
+Scan Dns
+
+
+
+POST
+/api/scans/subdomains
+Scan Subdomains
+
+
+
+POST
+/api/scans/ip
+Scan Ip
+
+
+
+POST
+/api/scans/ports
+Scan Ports
+
+
+
+GET
+/api/scans/{scan_id}
+Get Scan Result
+
+
+
+DELETE
+/api/scans/{scan_id}
+Delete Scan
+
+
+
+GET
+/api/scans/user/history
+Get Scan History
+
+
+
+GET
+/api/scans/admin/all
+Get All Scans
+
+
+
+DELETE
+/api/scans/admin/{scan_id}
+Admin Delete Scan
+
+
+Security Scanning
+
+
+POST
+/api/security/ssl
+Scan Ssl
+
+
+
+POST
+/api/security/headers
+Scan Headers
+
+
+
+POST
+/api/security/phishing/check
+Check Phishing
+
+
+
+POST
+/api/security/tech-stack
+Scan Tech Stack
+
+
+
+POST
+/api/security/http-security
+Scan Http Security
+
+
+
+GET
+/api/security/cache/stats
+Get Cache Stats
+
+
+
+POST
+/api/security/cache/clear
+Clear Cache
+
+
+
+GET
+/api/security/cache/entries
+Get Cache Entries
+
+
+
+GET
+/api/security/health/detailed
+Detailed Health Check
+
+
+GET
+/api/security/rate-limits
+Get Rate Limits
+
+
+File Analysis
+
+
+POST
+/api/files/hash/check
+Check Hash
+
+
+
+POST
+/api/files/hash/batch
+Check Hash Batch
+
+
+
+POST
+/api/files/upload/analyze
+Analyze File Upload
+
+
+
+POST
+/api/files/virustotal/check
+Check Virustotal
+
+
+
+GET
+/api/files/malware/database
+Get Malware Database Info
+
+
+
+POST
+/api/files/malware/database/update
+Update Malware Database
+
+
+
+GET
+/api/files/supported/hash-types
+Get Supported Hash Types
+
+
+GET
+/api/files/supported/file-types
+Get Supported File Types
+
+default
+
+
+GET
+/
+Root
+
+
+GET
+/health
+Health Check
+
+
+GET
+/status
+Status Check
+
+
+Schemas
+ActivityLogExpand allobject
+ActivityResponseExpand allobject
+AdminUserResponseExpand allobject
+BatchHashCheckRequestExpand allobject
+BatchHashCheckResultExpand allobject
+Body_analyze_file_upload_api_files_upload_analyze_postExpand allobject
+CertificateInfoExpand allobject
+CipherSuiteExpand allobject
+DNSRequestExpand allobject
+DeleteAccountRequestExpand allobject
+DomainScanRequestExpand allobject
+FileAnalysisResultExpand allobject
+HTTPSecurityRequestExpand allobject
+HTTPSecurityResultExpand allobject
+HTTPValidationErrorExpand allobject
+HashCheckRequestExpand allobject
+HashCheckResultExpand allobject
+HashReputationExpand allobject
+HashTypeExpand allstring
+HeaderScanRequestExpand allobject
+HeaderScanResultExpand allobject
+IPScanRequestExpand allobject
+MalwareDatabaseInfoExpand allobject
+PasswordChangeExpand allobject
+PhishingCheckRequestExpand allobject
+PhishingCheckResultExpand allobject
+PhishingIndicatorExpand allstring
+PhishingIndicatorInfoExpand allobject
+PlatformStatsExpand allobject
+PortScanRequestExpand allobject
+RefreshTokenRequestExpand allobject
+RiskLevelExpand allstring
+SSLScanRequestExpand allobject
+SSLScanResultExpand allobject
+ScanHistoryResponseExpand allobject
+ScanResultExpand allobject
+ScanStatusExpand allstring
+ScanTypeExpand allstring
+SecurityHeaderExpand allstring
+SecurityHeaderInfoExpand allobject
+StatsResponseExpand allobject
+SubdomainRequestExpand allobject
+TLSInfoExpand allobject
+TLSVersionExpand allstring
+TechStackRequestExpand allobject
+TechStackResultExpand allobject
+TechnologyExpand allobject
+TokenExpand allobject
+UserCreateExpand allobject
+UserListResponseExpand allobject
+UserLoginExpand allobject
+UserProfileUpdateExpand allobject
+UserRoleExpand allstring
+UserStatsExpand allobject
+UserUpdateRequestExpand allobject
+ValidationErrorExpand allobject
+VirusTotalCheckRequestExpand allobject
+VirusTotalReportExpand allobject
+VulnerabilityExpand allobject
+WhoisRequestExpand allobject
+UserResponseExpand allobject
+UserResponseExpand allobject

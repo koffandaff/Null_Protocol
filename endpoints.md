@@ -402,7 +402,100 @@ Content-Type: application/json
 
 ---
 
-## 👑 **5. ADMIN ENDPOINTS**
+## 🛡️ **5. SECURITY SCANNING ENDPOINTS**
+
+### **5.1 SSL/TLS Scan**
+```
+POST http://localhost:8000/api/security/ssl
+Authorization: Bearer ACCESS_TOKEN_USER
+Content-Type: application/json
+
+{
+    "target": "google.com",
+    "port": 443
+}
+```
+**Expected Output (200):** SSL certificate and TLS configuration details.
+
+### **5.2 Security Headers Scan**
+```
+POST http://localhost:8000/api/security/headers
+Authorization: Bearer ACCESS_TOKEN_USER
+Content-Type: application/json
+
+{
+    "url": "https://google.com"
+}
+```
+**Expected Output (200):** Analysis of security headers (HSTS, CSP, X-Frame-Options, etc.).
+
+### **5.3 Phishing Check**
+```
+POST http://localhost:8000/api/security/phishing/check
+Authorization: Bearer ACCESS_TOKEN_USER
+Content-Type: application/json
+
+{
+    "url": "http://suspicious-site.com",
+    "deep_analysis": true
+}
+```
+**Expected Output (200):** Phishing probability and indicator analysis.
+
+### **5.4 Tech Stack Discovery**
+```
+POST http://localhost:8000/api/security/tech-stack
+Authorization: Bearer ACCESS_TOKEN_USER
+Content-Type: application/json
+
+{
+    "url": "https://github.com"
+}
+```
+**Expected Output (200):** Identified technologies (Server, CMS, JS Libraries).
+
+---
+
+## 📂 **6. FILE ANALYSIS ENDPOINTS**
+
+### **6.1 Single Hash Check**
+```
+POST http://localhost:8000/api/files/hash/check
+Authorization: Bearer ACCESS_TOKEN_USER
+Content-Type: application/json
+
+{
+    "hash": "44d88612fea8a8f36de82e1278abb02f",
+    "hash_type": "md5"
+}
+```
+**Expected Output (200):** Reputation results for the specific file hash.
+
+### **6.2 Analyze File Upload**
+```
+POST http://localhost:8000/api/files/upload/analyze
+Authorization: Bearer ACCESS_TOKEN_USER
+Content-Type: multipart/form-data
+
+file=@"/path/to/your/file.exe"
+```
+**Expected Output (200):** File type, hash analysis, and basic static analysis.
+
+### **6.3 VirusTotal Check**
+```
+POST http://localhost:8000/api/files/virustotal/check
+Authorization: Bearer ACCESS_TOKEN_USER
+Content-Type: application/json
+
+{
+    "resource": "44d88612fea8a8f36de82e1278abb02f"
+}
+```
+**Expected Output (200):** Detailed analysis from VirusTotal API (requires API key).
+
+---
+
+## 👑 **7. ADMIN ENDPOINTS**
 
 ### **5.1 Get All Users**
 ```

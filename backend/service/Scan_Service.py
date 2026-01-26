@@ -72,6 +72,7 @@ class ScanService:
             
             # Perform scan based on type
             results = {}
+            print(f"[DEBUG] Initiating {scan['scan_type']} scan for target: {scan['target']} (User: {scan['user_id']})")
             
             if scan['scan_type'] == 'domain':
                 results = network_tools.full_domain_scan(scan['target'])
@@ -91,18 +92,29 @@ class ScanService:
             elif scan['scan_type'] == 'ports':
                 # For domain targets, get IP first
                 if ScanValidator.validate_domain(scan['target']):
+                    print(f"[DEBUG] Resolving domain {scan['target']} to IP for port scan...")
                     dns_results = network_tools.get_dns_records(scan['target'])
                     if dns_results.get('a_records'):
                         target_ip = dns_results['a_records'][0]
+                        print(f"[DEBUG] Resolved to {target_ip}. Starting port scan...")
                         results = network_tools.scan_ports(target_ip)
                         results['domain'] = scan['target']
                     else:
+                        print(f"[ERROR] Could not resolve {scan['target']}")
                         raise ValueError("Could not resolve domain to IP")
                 else:
+                    print(f"[DEBUG] Starting direct IP port scan on {scan['target']}")
                     results = network_tools.scan_ports(scan['target'])
             
             else:
+                print(f"[ERROR] Unsupported scan type: {scan['scan_type']}")
                 raise ValueError(f"Unsupported scan type: {scan['scan_type']}")
+            
+            # Generate Intelligent Summary
+            scan_summary = network_tools.generate_scan_summary(scan['scan_type'], scan['target'], results)
+            results['analysis_summary'] = scan_summary
+            
+            print(f"[DEBUG] Scan {scan_id} completed successfully. Results size: {len(str(results))} bytes")
             
             # Calculate duration
             duration_ms = int((time.time() - start_time) * 1000)

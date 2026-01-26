@@ -1,0 +1,32 @@
+/* Syntax Highlighting */
+pre {
+    background: rgba(0, 0, 0, 0.5) !important;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.string {
+    color: #a5d6ff;
+}
+
+.number {
+    color: #79c0ff;
+}
+
+.boolean {
+    color: #ff7b72;
+}
+
+.null {
+    color: #ff7b72;
+}
+
+.key {
+    color: var(--primary);
+    font-weight: bold;
+}

@@ -85,10 +85,24 @@ class NetworkTools:
     def get_whois(self, domain: str) -> Dict:
         """Get WHOIS information for a domain using python-whois"""
         try:
-            # Try to import python-whois (which is installed as whois)
-            import whois as python_whois
+            # Clean domain name
+            domain = domain.lower().replace('http://', '').replace('https://', '').split('/')[0]
             
-            w = python_whois.whois(domain)
+            # Try to import whois (installed via pip install python-whois)
+            import whois
+            
+            # Use the whois look function - handle both main packages (python-whois/whois)
+            lookup_func = None
+            if hasattr(whois, 'whois'):
+                lookup_func = whois.whois
+            elif hasattr(whois, 'query'):
+                lookup_func = whois.query
+            
+            if not lookup_func:
+                return {'error': 'WHOIS module found but incompatible API. Try: pip install python-whois'}
+
+            # Perform the lookup
+            w = lookup_func(domain)
             
             # Convert whois object to dict
             whois_dict = {}
@@ -101,26 +115,32 @@ class NetworkTools:
                 'state', 'zipcode', 'country'
             ]
             
-            for field in fields:
-                if hasattr(w, field):
-                    value = getattr(w, field)
-                    if value:
-                        whois_dict[field] = str(value) if not isinstance(value, list) else [str(v) for v in value]
-            
-            # Clean up dates
-            date_fields = ['updated_date', 'creation_date', 'expiration_date']
-            for field in date_fields:
-                if field in whois_dict:
-                    if isinstance(whois_dict[field], list):
-                        whois_dict[field] = whois_dict[field][0]
-            
-            return whois_dict
+            if w:
+                for field in fields:
+                    if hasattr(w, field):
+                        value = getattr(w, field)
+                        if value:
+                            whois_dict[field] = str(value) if not isinstance(value, list) else [str(v) for v in value]
+                
+                # Clean up dates
+                date_fields = ['updated_date', 'creation_date', 'expiration_date']
+                for field in date_fields:
+                    if field in whois_dict:
+                        if isinstance(whois_dict[field], list):
+                            whois_dict[field] = whois_dict[field][0]
+                
+                return whois_dict
+            else:
+                return {'error': 'No WHOIS data found'}
             
         except ImportError:
             # Alternative: Use whois command line if available
             return self._get_whois_via_cli(domain)
         except Exception as e:
-            return {'error': f'WHOIS lookup failed: {str(e)}'}
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"[ERROR] WHOIS failed for {domain}: {str(e)}\n{error_trace}")
+            return {'error': f'WHOIS lookup failed (internal error). Please contact administrator.'}
     
     def _get_whois_via_cli(self, domain: str) -> Dict:
         """Fallback: Use system whois command"""
@@ -130,18 +150,19 @@ class NetworkTools:
                 ['whois', domain],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
+                shell=True # Needed for some Windows environments
             )
             
-            if result.returncode == 0:
+            if result.returncode == 0 and result.stdout:
                 return {
                     'raw_whois': result.stdout,
                     'note': 'Raw WHOIS data (parsed version not available)'
                 }
             else:
-                return {'error': 'WHOIS command failed or not available'}
+                return {'error': f'WHOIS module/command not found. Try: pip install python-whois'}
         except:
-            return {'error': 'WHOIS not available. Install with: pip install python-whois'}
+            return {'error': 'WHOIS lookup unavailable on this system.'}
     
     # ========== SUBDOMAIN METHODS ==========
     
@@ -284,10 +305,14 @@ class NetworkTools:
                 sock.close()
                 
                 if result == 0:
+                    risk_info = self.get_port_risk(port)
                     open_ports.append({
                         'port': port,
                         'service': self._get_service_name(port),
-                        'status': 'open'
+                        'status': 'open',
+                        'risk': risk_info['level'],
+                        'risk_score': risk_info['score'],
+                        'risk_color': risk_info['color']
                     })
                 
                 time.sleep(0.1)  # Rate limiting
@@ -350,12 +375,87 @@ class NetworkTools:
                 ip_scans.append({
                     'ip': ip,
                     'info': self.get_ip_info(ip),
-                    'ports': self.scan_ports(ip, [80, 443, 22, 21, 25])  # Common ports only
+                    # Comprehensive port set for full scan consistency
+                    'ports': self.scan_ports(ip, [21, 22, 23, 25, 53, 80, 110, 143, 443, 465, 587, 993, 995, 3306, 3389])
                 })
             
             results['ip_scans'] = ip_scans
         
         return results
+
+    def get_port_risk(self, port: int) -> Dict:
+        """Classify port risk level: low, medium, high"""
+        high_risk = [22, 23, 3306, 3389, 5432]  # Management or Database
+        medium_risk = [21, 25, 53, 110, 143, 465, 587, 8080] # Legacy or E-mail
+        
+        if port in high_risk:
+            return {'level': 'HIGH', 'score': 85, 'color': '#ff4757'}
+        elif port in medium_risk:
+            return {'level': 'MEDIUM', 'score': 45, 'color': '#ffa502'}
+        else:
+            return {'level': 'LOW', 'score': 15, 'color': '#00ff9d'}
+
+    def generate_scan_summary(self, scan_type: str, target: str, results: Dict) -> str:
+        """Generate a human-readable summary of the scan results"""
+        summary = f"### Security Assessment: {target}\n\n"
+        
+        if scan_type == 'dns':
+            a_records = results.get('a_records', [])
+            mx_records = results.get('mx_records', [])
+            summary += f"Target infrastructure consists of **{len(a_records)}** publicly accessible IPs.\n"
+            summary += f"Mail topology indicates **{len(mx_records)}** gateway points found. "
+            if mx_records:
+                summary += f"Primary mail delivery handled by `{mx_records[0]}`.\n"
+            summary += "\n**Vulnerability Note**: If DNSSEC is missing, target remains susceptible to cache poisoning."
+        
+        elif scan_type == 'whois':
+            if results.get('error'):
+                summary += "CRITICAL: WHOIS subsystem unreachable. Registration privacy could not be verified.\n"
+            else:
+                registrar = results.get('registrar', 'Unknown')
+                expiry = results.get('expiration_date', 'Unknown')
+                summary += f"Asset identified as registered through **{registrar}**.\n"
+                summary += f"Operational window expires: `{expiry}`.\n"
+                summary += "\n**Analysis**: Verify administrative contacts to detect potential subdomain takeover avenues."
+        
+        elif scan_type == 'subdomains':
+            subs = results.get('subdomains_found', [])
+            summary += f"Surface area expansion detected: **{len(subs)}** active sub-assets identified.\n"
+            if subs:
+                summary += "High-traffic endpoints found: " + ", ".join(subs[:5]) + (", etc.\n" if len(subs) > 5 else "\n")
+                summary += "\n**Warning**: Each subdomain increases the potential attack surface. Proper WAF coverage is recommended."
+        
+        elif scan_type == 'ports':
+            open_ports = results.get('open_ports', [])
+            summary += f"Active service map reveals **{len(open_ports)}** exposed ports.\n"
+            if open_ports:
+                summary += "Detected Protocol Stack:\n"
+                for p in open_ports[:5]:
+                    summary += f"- Port {p['port']}: Running **{p['service']}** daemon.\n"
+                summary += "\n**Expert Analysis**: " + ("Open management ports (22, 3389) detected. Ensure IP whitelisting." if any(p['port'] in [22, 3389] for p in open_ports) else "Standard HTTP/HTTPS stack identified.")
+        
+        elif scan_type == 'ip':
+            summary += f"Target mapped to node type: **{results.get('service', 'General Infrastructure')}**.\n"
+            if results.get('geolocation'):
+                geo = results['geolocation']
+                summary += f"Physical Location: {geo.get('city')}, {geo.get('country')} via {geo.get('isp')}.\n"
+                summary += f"ASN: `{geo.get('as', 'Private/Internal')}`\n"
+        
+        if scan_type == 'domain' or results.get('scan_type') == 'full':
+            summary = "### Executive Summary (Threat Report)\n"
+            dns = results.get('dns_records', {})
+            ports_data = results.get('ip_scans', [{}])[0].get('ports', {})
+            open_ports = ports_data.get('open_ports', [])
+            
+            summary += f"- **Infrastructure Reliability**: Resolved to `{dns.get('a_records', ['N/A'])[0]}`. High availability cluster detected.\n"
+            summary += f"- **Mail Security**: {len(dns.get('mx_records', []))} MX nodes found. Check SPF/DKIM for spoofing protection.\n"
+            summary += f"- **Service Exposure**: OSINT indicates {len(open_ports)} open listener(s). "
+            if open_ports:
+                summary += f"Primary entry: **{open_ports[0]['service']}**.\n"
+            summary += f"- **Asset Tracking**: {len(results.get('subdomains', {}).get('subdomains_found', []))} endpoints mapped in the current session.\n"
+            summary += "\n**Overall Risk Level**: " + ("MODERATE" if len(open_ports) > 2 else "LOW") + " (OSINT visibility)"
+
+        return summary
 
 # Global instance
 network_tools = NetworkTools()

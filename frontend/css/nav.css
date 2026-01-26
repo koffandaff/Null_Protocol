@@ -1,0 +1,19 @@
+/* Navigation & Sidebar */
+a {
+    text-decoration: none !important;
+}
+
+.btn-outline,
+.btn {
+    text-decoration: none !important;
+}
+
+#sidebar-container a:hover {
+    text-decoration: none !important;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Ensure no underlines on sidebar items */
+#sidebar-container a span {
+    text-decoration: none !important;
+}

@@ -1,0 +1,50 @@
+Test ID,Endpoint,Method,Category,Status,Status Code,Response Time (s),Error,Timestamp
+AUTH-001,/health,GET,authentication,PASS,200,0.006,,2025-12-24T17:31:27.767631
+AUTH-002,/,GET,authentication,PASS,200,0.003,,2025-12-24T17:31:27.773594
+AUTH-003,/api/auth/signup,POST,authentication,PASS,201,0.214,,2025-12-24T17:31:27.776248
+AUTH-004,/api/auth/login,POST,authentication,PASS,200,0.220,,2025-12-24T17:31:27.990181
+AUTH-005,/api/auth/me,GET,authentication,FAIL,403,0.003,HTTP 403: Not authenticated,2025-12-24T17:31:28.210182
+AUTH-006,/api/auth/refresh,POST,authentication,PASS,200,0.003,,2025-12-24T17:31:28.212794
+AUTH-007,/api/auth/logout,POST,authentication,FAIL,403,0.002,HTTP 403: Not authenticated,2025-12-24T17:31:28.215664
+USER-001,/api/user/profile,GET,user_management,PASS,200,0.002,,2025-12-24T17:31:28.218390
+USER-002,/api/user/profile,PUT,user_management,PASS,200,0.002,,2025-12-24T17:31:28.220754
+USER-003,/api/user/password,PUT,user_management,PASS,400,0.208,,2025-12-24T17:31:28.223282
+USER-004,/api/user/activities?limit=5&page=1,GET,user_management,PASS,200,0.003,,2025-12-24T17:31:28.431781
+USER-005,/api/user/stats,GET,user_management,PASS,200,0.002,,2025-12-24T17:31:28.434536
+USER-006,/api/user/account,DELETE,user_management,PASS,400,0.208,,2025-12-24T17:31:28.436682
+SCAN-001,/api/scans/domain,POST,basic_scanning,PASS,200,29.415,,2025-12-24T17:31:28.645654
+SCAN-002,/api/scans/whois,POST,basic_scanning,PASS,200,0.005,,2025-12-24T17:31:58.061062
+SCAN-003,/api/scans/dns,POST,basic_scanning,PASS,200,0.258,,2025-12-24T17:31:58.065950
+SCAN-004,/api/scans/subdomains,POST,basic_scanning,PASS,200,0.145,,2025-12-24T17:31:58.323700
+SCAN-005,/api/scans/ip,POST,basic_scanning,PASS,200,4.375,,2025-12-24T17:31:58.468540
+SCAN-006,/api/scans/ports,POST,basic_scanning,PASS,200,18.253,,2025-12-24T17:32:02.844059
+SCAN-007,/api/scans/user/history?limit=5&page=1,GET,basic_scanning,PASS,200,0.003,,2025-12-24T17:32:21.097212
+SCAN-008,/api/scans/domain/advanced,POST,basic_scanning,PASS,404,0.002,,2025-12-24T17:32:21.099813
+SEC-001,/api/security/ssl,POST,enhanced_security,PASS,200,0.248,,2025-12-24T17:32:21.101993
+SEC-002,/api/security/headers,POST,enhanced_security,PASS,200,0.227,,2025-12-24T17:32:21.350487
+SEC-003,/api/security/phishing/check,POST,enhanced_security,PASS,200,0.319,,2025-12-24T17:32:21.577585
+SEC-004,/api/security/tech-stack,POST,enhanced_security,PASS,200,0.173,,2025-12-24T17:32:21.896226
+SEC-005,/api/security/http-security,POST,enhanced_security,PASS,200,0.324,,2025-12-24T17:32:22.069562
+SEC-006,/api/security/rate-limits,GET,enhanced_security,PASS,200,0.002,,2025-12-24T17:32:22.393144
+SEC-007,/api/security/health/detailed,GET,enhanced_security,PASS,200,0.063,,2025-12-24T17:32:22.395681
+SEC-008,/api/security/cache/stats,GET,enhanced_security,PASS,403,0.003,,2025-12-24T17:32:22.459063
+SEC-009,/api/security/cache/entries?limit=10,GET,enhanced_security,PASS,403,0.003,,2025-12-24T17:32:22.462174
+FILE-001,/api/files/hash/check,POST,file_analysis,PASS,200,0.003,,2025-12-24T17:32:22.465619
+FILE-002,/api/files/hash/batch,POST,file_analysis,PASS,200,0.003,,2025-12-24T17:32:22.468573
+FILE-003,/api/files/upload/analyze,POST,file_analysis,PASS,200,0.005,,2025-12-24T17:32:22.486642
+FILE-004,/api/files/virustotal/check,POST,file_analysis,PASS,400,0.003,,2025-12-24T17:32:22.492691
+FILE-005,/api/files/supported/hash-types,GET,file_analysis,PASS,200,0.002,,2025-12-24T17:32:22.496100
+FILE-006,/api/files/supported/file-types,GET,file_analysis,PASS,200,0.002,,2025-12-24T17:32:22.498513
+FILE-007,/api/files/malware/database,GET,file_analysis,PASS,403,0.002,,2025-12-24T17:32:22.500961
+SYS-001,/,GET,system,PASS,200,0.003,,2025-12-24T17:32:22.503725
+SYS-002,/health,GET,system,PASS,200,0.003,,2025-12-24T17:32:22.506314
+SYS-003,/status,GET,system,PASS,200,0.003,,2025-12-24T17:32:22.509151
+SYS-004,/docs,GET,system,PASS,200,0.002,,2025-12-24T17:32:22.512216
+SYS-005,/redoc,GET,system,PASS,200,0.002,,2025-12-24T17:32:22.514211
+ADMIN-001,/api/admin/users?limit=5&page=1,GET,admin,PASS,403,0.003,,2025-12-24T17:32:22.516395
+ADMIN-002,/api/admin/stats,GET,admin,PASS,403,0.002,,2025-12-24T17:32:22.519013
+ADMIN-003,/api/admin/activities?limit=10&page=1,GET,admin,PASS,403,0.003,,2025-12-24T17:32:22.521316
+ADMIN-004,/api/admin/scans?limit=10&page=1,GET,admin,FAIL,404,0.003,HTTP 404: Not Found,2025-12-24T17:32:22.524462
+ADMIN-005,/api/scans/admin/all?limit=5,GET,admin,PASS,403,0.003,,2025-12-24T17:32:22.527304
+ADMIN-006,/api/security/cache/clear,POST,admin,PASS,403,0.003,,2025-12-24T17:32:22.530646
+ADMIN-007,/api/files/malware/database/update,POST,admin,PASS,403,0.003,,2025-12-24T17:32:22.533643

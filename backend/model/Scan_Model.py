@@ -10,6 +10,7 @@ class ScanType(str, Enum):
     DNS = "dns"
     SUBDOMAINS = "subdomains"
     PORTS = "ports"
+    VIRUSTOTAL = "virustotal"
     FULL = "full"
 
 class ScanStatus(str, Enum):
@@ -45,6 +46,10 @@ class PortScanRequest(BaseModel):
     target: str  # Can be domain or IP
     ports: List[int] = Field(default=[80, 443, 22, 21, 25, 53, 8080, 8443])
     timeout: int = Field(default=1, ge=1, le=10)
+
+class VirusTotalRequest(BaseModel):
+    target: str  # URL or File Hash
+    scan_type: str = "url"  # 'url' or 'file'
 
 # Scan Result Models
 class ScanResult(BaseModel):

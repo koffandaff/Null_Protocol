@@ -1,0 +1,176 @@
+{
+  "scans": [
+    {
+      "id": "cda95ba4-d0d4-403d-a367-759f22199698",
+      "user_id": "5daee84c-6802-4897-9fca-387e7b0eba8b",
+      "email_scanned": "dhruvillearning@gmail.com",
+      "username_scanned": "koffandaff",
+      "platforms_checked": [
+        "instagram"
+      ],
+      "score": 100,
+      "findings": [
+        {
+          "id": "02b5ed3f",
+          "category": "username_found",
+          "source": "Instagram",
+          "severity": "low",
+          "title": "Username found on Instagram",
+          "description": "The username 'koffandaff' was found on Instagram.",
+          "url": "https://instagram.com/koffandaff",
+          "found_at": "2026-01-26 23:18:03.488533"
+        }
+      ],
+      "recommendations": [
+        "\u2705 Your digital footprint is relatively secure. Keep monitoring regularly.",
+        "\ud83d\udd0d Enable two-factor authentication on all important accounts.",
+        "\ud83d\uddd1\ufe0f Delete accounts you no longer use to reduce your attack surface."
+      ],
+      "status": "completed",
+      "progress": 100,
+      "started_at": "2026-01-26 23:18:03.447110",
+      "completed_at": "2026-01-26T23:18:03.535914",
+      "error_message": null
+    },
+    {
+      "id": "b358c31a-2965-4ee1-9e9e-927e3f9718dc",
+      "user_id": "79db0fda-db05-4763-9d1d-624920735bec",
+      "email_scanned": "dhruvillearning@gmail.com",
+      "username_scanned": "koffandaff",
+      "platforms_checked": [
+        "twitter",
+        "instagram",
+        "linkedin",
+        "tiktok",
+        "reddit",
+        "github",
+        "discord"
+      ],
+      "score": 63,
+      "findings": [
+        {
+          "id": "dd63c0a0",
+          "category": "email_exposure",
+          "source": "Facebook",
+          "severity": "medium",
+          "title": "Email registered on Facebook",
+          "description": "Your email address appears to be registered on Facebook.",
+          "url": null,
+          "found_at": "2026-01-26 23:22:37.504496"
+        },
+        {
+          "id": "6a117df6",
+          "category": "email_exposure",
+          "source": "LinkedIn",
+          "severity": "low",
+          "title": "Email registered on LinkedIn",
+          "description": "Your email address appears to be registered on LinkedIn.",
+          "url": null,
+          "found_at": "2026-01-26 23:22:37.504551"
+        },
+        {
+          "id": "8501f3a4",
+          "category": "email_exposure",
+          "source": "GitHub",
+          "severity": "low",
+          "title": "Email registered on GitHub",
+          "description": "Your email address appears to be registered on GitHub.",
+          "url": null,
+          "found_at": "2026-01-26 23:22:37.504577"
+        },
+        {
+          "id": "5afb31cc",
+          "category": "email_exposure",
+          "source": "Spotify",
+          "severity": "low",
+          "title": "Email registered on Spotify",
+          "description": "Your email address appears to be registered on Spotify.",
+          "url": null,
+          "found_at": "2026-01-26 23:22:37.504598"
+        },
+        {
+          "id": "391ec675",
+          "category": "email_exposure",
+          "source": "Pinterest",
+          "severity": "low",
+          "title": "Email registered on Pinterest",
+          "description": "Your email address appears to be registered on Pinterest.",
+          "url": null,
+          "found_at": "2026-01-26 23:22:37.504618"
+        },
+        {
+          "id": "581e50c9",
+          "category": "email_exposure",
+          "source": "Discord",
+          "severity": "medium",
+          "title": "Email registered on Discord",
+          "description": "Your email address appears to be registered on Discord.",
+          "url": null,
+          "found_at": "2026-01-26 23:22:37.504637"
+        },
+        {
+          "id": "ff309650",
+          "category": "username_found",
+          "source": "Twitter",
+          "severity": "low",
+          "title": "Username found on Twitter",
+          "description": "The username 'koffandaff' was found on Twitter.",
+          "url": "https://twitter.com/koffandaff",
+          "found_at": "2026-01-26 23:22:37.506238"
+        },
+        {
+          "id": "9668ff6a",
+          "category": "username_found",
+          "source": "Instagram",
+          "severity": "low",
+          "title": "Username found on Instagram",
+          "description": "The username 'koffandaff' was found on Instagram.",
+          "url": "https://instagram.com/koffandaff",
+          "found_at": "2026-01-26 23:22:37.506271"
+        },
+        {
+          "id": "c46c8e5f",
+          "category": "username_found",
+          "source": "Linkedin",
+          "severity": "low",
+          "title": "Username found on Linkedin",
+          "description": "The username 'koffandaff' was found on Linkedin.",
+          "url": "https://linkedin.com/in/koffandaff",
+          "found_at": "2026-01-26 23:22:37.506294"
+        },
+        {
+          "id": "7062bef4",
+          "category": "username_found",
+          "source": "Tiktok",
+          "severity": "low",
+          "title": "Username found on Tiktok",
+          "description": "The username 'koffandaff' was found on Tiktok.",
+          "url": "https://tiktok.com/@koffandaff",
+          "found_at": "2026-01-26 23:22:37.506307"
+        },
+        {
+          "id": "dab190d2",
+          "category": "username_found",
+          "source": "Github",
+          "severity": "low",
+          "title": "Username found on Github",
+          "description": "The username 'koffandaff' was found on Github.",
+          "url": "https://github.com/koffandaff",
+          "found_at": "2026-01-26 23:22:37.506323"
+        }
+      ],
+      "recommendations": [
+        "\ud83d\udd10 Use a password manager and create unique passwords for each account.",
+        "\ud83d\udce7 Your email is registered on 6 platforms. Consider using email aliases for new signups.",
+        "\ud83d\udcf1 Review privacy settings on your social media accounts.",
+        "\ud83d\udd0d Enable two-factor authentication on all important accounts.",
+        "\ud83d\uddd1\ufe0f Delete accounts you no longer use to reduce your attack surface."
+      ],
+      "status": "completed",
+      "progress": 100,
+      "started_at": "2026-01-26 23:22:36.153853",
+      "completed_at": "2026-01-26T23:22:37.562283",
+      "error_message": null
+    }
+  ]
+}

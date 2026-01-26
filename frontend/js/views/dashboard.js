@@ -1,0 +1,81 @@
+import Auth from '../auth.js';
+import Api from '../api.js';
+import Components from '../components.js';
+
+class DashboardView {
+    async render() {
+        return `
+            ${Components.renderNavbar()}
+            <div style="display: flex; height: 100vh; padding-top: 60px;">
+                ${Components.renderSidebar('dashboard')}
+
+                <div style="flex: 1; padding: 2rem; overflow-y: auto;">
+                    <h1 class="page-title fade-in" style="font-size: 2.5rem; margin-bottom: 2rem;">System Overview</h1>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div class="card glass fade-in" style="animation-delay: 0.1s;">
+                            <h3 style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Total Scans</h3>
+                            <p id="stat-total-scans" style="font-size: 2.5rem; color: var(--primary); font-family: 'JetBrains Mono'; margin-top: 0.5rem; font-weight: bold;">-</p>
+                        </div>
+                        <div class="card glass fade-in" style="animation-delay: 0.2s;">
+                            <h3 style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">CPU Usage</h3>
+                            <p id="stat-cpu" style="font-size: 2.5rem; color: var(--secondary); font-family: 'JetBrains Mono'; margin-top: 0.5rem; font-weight: bold;">-</p>
+                        </div>
+                        <div class="card glass fade-in" style="animation-delay: 0.3s;">
+                            <h3 style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Memory Usage</h3>
+                            <p id="stat-memory" style="font-size: 2.5rem; color: #00e5ff; font-family: 'JetBrains Mono'; margin-top: 0.5rem; font-weight: bold;">-</p>
+                        </div>
+                    </div>
+
+                    <div class="card glass fade-in" style="animation-delay: 0.4s;">
+                        <h3 style="margin-bottom: 1.5rem;">System Status</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">All core modules are functional. Operation "FS" is active.</p>
+                        
+                        <div style="border: 1px dashed var(--primary); border-radius: 8px; padding: 1.5rem; background: rgba(0, 255, 157, 0.05);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <span style="color: var(--primary); font-family: 'JetBrains Mono';">[ OS / PLATFORM ]</span>
+                                <span id="stat-os" style="color: var(--text-main);">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <span style="color: var(--primary); font-family: 'JetBrains Mono';">[ DISK USAGE ]</span>
+                                <span id="stat-disk" style="color: var(--text-main);">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--primary); font-family: 'JetBrains Mono';">[ UPTIME ]</span>
+                                <span id="stat-uptime" style="color: var(--text-main);">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async afterRender() {
+        document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
+
+        try {
+            // Load History for scan count
+            const history = await Api.get('/scans/user/history');
+            document.getElementById('stat-total-scans').textContent = history.total || 0;
+
+            // Load System Status (Dynamic stats)
+            // We use the root/health but let's call the dedicated status if available
+            // Note: Our backend has @app.get('/status')
+            const response = await fetch('http://localhost:8000/status');
+            const statusData = await response.json();
+
+            if (statusData.system) {
+                document.getElementById('stat-cpu').textContent = statusData.system.cpu_usage || 'N/A';
+                document.getElementById('stat-memory').textContent = statusData.system.memory_usage || 'N/A';
+                document.getElementById('stat-disk').textContent = statusData.system.disk_usage || 'N/A';
+                document.getElementById('stat-os').textContent = statusData.system.platform || 'N/A';
+                document.getElementById('stat-uptime').textContent = statusData.system.uptime || 'N/A';
+            }
+        } catch (error) {
+            console.error('Failed to load dashboard stats:', error);
+        }
+    }
+}
+
+export default new DashboardView();

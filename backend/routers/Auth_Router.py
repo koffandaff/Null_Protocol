@@ -21,26 +21,30 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 # Endpoints
 
-@router.post('/signup', response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=UserResponse)
 async def signup(user_data: UserCreate):
+    """Register a new user"""
+    print(f"[AUTH] Signup attempt for email: {user_data.email}, username: {user_data.username}")
     try:
         user_dict = user_data.dict()
-        result = auth_service.register_user(user_dict)
-        return UserResponse(**result)
+        user = auth_service.register_user(user_dict)
+        print(f"[AUTH] Signup SUCCESS for {user_data.username}")
+        return UserResponse(**user)
     except ValueError as e:
+        print(f"[AUTH] Signup FAILED: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.post('/login')
+@router.post("/login")
 async def login(login_data: UserLogin):
+    """Login and get token"""
+    print(f"[AUTH] Login attempt for: {login_data.email}")
     try:
         result = auth_service.login_user(login_data.email, login_data.password)
+        print(f"[AUTH] Login SUCCESS for: {login_data.email}")
         return result
     except ValueError as e:
+        print(f"[AUTH] Login FAILED for: {login_data.email}")
         raise HTTPException(status_code=401, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post('/logout')
 async def logout(request: RefreshTokenRequest, current_user: dict = Depends(get_current_user)):

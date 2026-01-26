@@ -1,0 +1,383 @@
+:root {
+    /* Colors */
+    --bg-dark: #0f0f13;
+    --bg-card: rgba(255, 255, 255, 0.05);
+    --bg-card-hover: rgba(255, 255, 255, 0.08);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --primary: #00ff9d;
+    /* Neon Green */
+    --primary-dim: rgba(0, 255, 157, 0.1);
+    --secondary: #7000ff;
+    /* Neon Purple */
+    --danger: #ff4757;
+    --text-main: #ffffff;
+    --text-muted: #a0a0a0;
+
+    /* Effects */
+    --blur: 10px;
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+    /* Typography */
+    --font-main: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-dark);
+    /* Cyberpunk Grid Background */
+    background-image:
+        linear-gradient(rgba(0, 255, 157, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 157, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    color: var(--text-main);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: repeating-linear-gradient(0deg,
+            rgba(0, 0, 0, 0.15),
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 2px);
+    pointer-events: none;
+    z-index: 9999;
+}
+
+#app {
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+    background: var(--bg-card);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.btn {
+    background: var(--primary);
+    color: #000;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-main);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px var(--primary-dim);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+}
+
+.btn-outline:hover {
+    background: var(--primary);
+    color: #000;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+input[type="number"],
+input[type="tel"],
+select,
+textarea {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem;
+    border-radius: 4px;
+    color: var(--primary);
+    font-family: var(--font-mono);
+    width: 100%;
+    transition: all 0.3s ease;
+    appearance: none;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-right: 0.6rem;
+    cursor: pointer;
+    vertical-align: middle;
+    border: 2px solid var(--primary);
+    border-radius: 3px;
+    background: transparent;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+input[type="radio"] {
+    border-radius: 50%;
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--primary);
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='20 6 9 17 4 12'%3e%3c/polyline%3e%3c/svg%3e");
+    background-size: 80%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+input[type="checkbox"]:checked::after {
+    content: none;
+}
+
+input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: #000;
+    border-radius: 50%;
+}
+
+#report-container canvas {
+    max-height: 150px;
+}
+
+/* Platform Card Active State */
+.platform-card.active {
+    background: rgba(0, 255, 157, 0.1) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 15px rgba(0, 255, 157, 0.1);
+}
+
+/* Custom Select Arrow */
+select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300ff9d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+
+option {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Toast */
+#toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.toast {
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    border-left: 4px solid var(--primary);
+    animation: slideIn 0.3s ease;
+}
+
+.toast.error {
+    border-color: var(--danger);
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    font-family: 'JetBrains Mono';
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    color: var(--text-main);
+}
+
+.tab-btn.active {
+    color: var(--secondary);
+    border-bottom: 2px solid var(--secondary);
+    background: rgba(0, 255, 157, 0.05);
+}
+
+/* Report Accordion Styles */
+.accordion-item {
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.acc-header {
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.02);
+    font-family: 'JetBrains Mono';
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.acc-header:hover {
+    background: rgba(0, 255, 157, 0.05);
+}
+
+.acc-body {
+    max-height: 0;
+    padding: 0 1.5rem;
+    transition: all 0.4s ease-out;
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.accordion-item.active .acc-body {
+    max-height: 2000px;
+    padding: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.acc-badge {
+    font-size: 0.7rem;
+    background: var(--primary);
+    color: black;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Grid Lists & Cards */
+.grid-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.8rem;
+}
+
+.sub-pill {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono';
+    font-size: 0.8rem;
+    color: var(--text-main);
+}
+
+.port-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.port-card {
+    background: rgba(0, 255, 157, 0.02);
+    border: 1px solid rgba(0, 255, 157, 0.1);
+    padding: 1rem;
+    text-align: center;
+    border-radius: 8px;
+}
+
+.port-num {
+    font-size: 1.5rem;
+    color: var(--primary);
+    font-family: 'JetBrains Mono';
+    font-weight: bold;
+}
+
+.port-service {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin: 0.3rem 0;
+}
+
+.port-status {
+    font-size: 0.65rem;
+    color: #00ff00;
+    letter-spacing: 1px;
+}
+
+.geo-info div {
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding-bottom: 0.4rem;
+}
+
+.geo-info label {
+    color: var(--primary);
+    font-size: 0.7rem;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.dns-grid .dns-section {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    border-radius: 6px;
+    border-left: 2px solid var(--secondary);
+}
+
+.tab-btn.active::before {
+    content: '> ';
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

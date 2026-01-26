@@ -3,7 +3,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from model.Auth_Model import db
 from model.User_Model import (
     UserProfileUpdate, PasswordChange, 
-    ActivityResponse, StatsResponse, DeleteAccountRequest
+    ActivityResponse, StatsResponse, DeleteAccountRequest,
+    UserResponse  # ADD THIS IMPORT
 )
 from service.Auth_Service import AuthService
 from service.User_Service import UserService
@@ -25,13 +26,41 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         )
     return user
 
-# Update user profile
-@router.put("/profile")
+# ========== PROFILE MANAGEMENT ==========
+
+@router.get("/profile", response_model=UserResponse)  # ADD THIS ENDPOINT
+async def get_profile(
+    current_user: dict = Depends(get_current_user),
+    request: Request = None
+):
+    """Get current user profile"""
+    try:
+        # Log activity
+        user_service.log_activity(
+            user_id=current_user['id'],
+            action="view_profile",
+            details={"action": "get_profile"},
+            request=request
+        )
+        
+        # Get user from database
+        user = db.get_userby_id(current_user['id'])
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Return user profile
+        return UserResponse(**user)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/profile", response_model=UserResponse)
 async def update_profile(
     profile_data: UserProfileUpdate,
     current_user: dict = Depends(get_current_user),
     request: Request = None
 ):
+    """Update user profile"""
     try:
         # Log activity
         user_service.log_activity(
@@ -49,13 +78,15 @@ async def update_profile(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Change password
+# ========== PASSWORD MANAGEMENT ==========
+
 @router.put("/password")
 async def change_password(
     password_data: PasswordChange,
     current_user: dict = Depends(get_current_user),
     request: Request = None
 ):
+    """Change user password"""
     try:
         # Log activity
         user_service.log_activity(
@@ -76,13 +107,15 @@ async def change_password(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Delete account
+# ========== ACCOUNT MANAGEMENT ==========
+
 @router.delete("/account")
 async def delete_account(
     delete_request: DeleteAccountRequest,
     current_user: dict = Depends(get_current_user),
     request: Request = None
 ):
+    """Delete user account"""
     try:
         # Log activity (before deletion)
         user_service.log_activity(
@@ -99,7 +132,8 @@ async def delete_account(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Get user activities
+# ========== ACTIVITY & STATISTICS ==========
+
 @router.get("/activities", response_model=ActivityResponse)
 async def get_activities(
     limit: int = 20,
@@ -107,11 +141,13 @@ async def get_activities(
     current_user: dict = Depends(get_current_user),
     request: Request = None
 ):
+    """Get user activity logs"""
     try:
         # Log activity
         user_service.log_activity(
             user_id=current_user['id'],
             action="view_activities",
+            details={"limit": limit, "page": page},
             request=request
         )
         
@@ -121,12 +157,12 @@ async def get_activities(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Get user statistics
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats(
     current_user: dict = Depends(get_current_user),
     request: Request = None
 ):
+    """Get user statistics"""
     try:
         # Log activity
         user_service.log_activity(
