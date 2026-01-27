@@ -11,15 +11,15 @@ class LoginView {
                     <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Enter the system</p>
                     
                     <form id="login-form">
-                        <div style="margin-bottom: 1rem;">
+                         <div style="margin-bottom: 1rem;">
                             <label style="display: block; margin-bottom: 0.5rem;">Email</label>
-                            <input type="email" id="email" required placeholder="admin@fsociety.com">
+                            <input type="email" id="email" required>
                         </div>
                         
                         <div style="margin-bottom: 2rem;">
                             <label style="display: block; margin-bottom: 0.5rem;">Password</label>
                             <div style="position: relative; display: flex; align-items: center;">
-                                <input type="password" id="password" required placeholder="••••••••" style="width: 100%; padding-right: 40px;">
+                                <input type="password" id="password" required style="width: 100%; padding-right: 40px;">
                                 <span class="material-symbols-outlined toggle-password" style="position: absolute; right: 10px; cursor: pointer; color: var(--text-muted); user-select: none; z-index: 10;">visibility</span>
                             </div>
                         </div>

@@ -171,6 +171,135 @@
       "started_at": "2026-01-26 23:22:36.153853",
       "completed_at": "2026-01-26T23:22:37.562283",
       "error_message": null
+    },
+    {
+      "id": "934cd6b0-eb48-4c17-87ca-9bf40303e9e9",
+      "user_id": "844f9942-aa1f-454e-9e50-e5e841d32ab0",
+      "email_scanned": "dhruvillearning@gmail.com",
+      "username_scanned": "koffandaff",
+      "phone_scanned": "+91 9824998490",
+      "platforms_checked": [
+        "instagram",
+        "facebook",
+        "linkedin",
+        "reddit",
+        "github",
+        "discord"
+      ],
+      "score": 89,
+      "findings": [
+        {
+          "id": "55b5e197",
+          "category": "email_exposure",
+          "source": "Twitter",
+          "severity": "medium",
+          "title": "Email registered on Twitter",
+          "description": "Your email address appears to be registered on Twitter.",
+          "url": null,
+          "found_at": "2026-01-27 06:51:40.608857"
+        },
+        {
+          "id": "9c83299f",
+          "category": "email_exposure",
+          "source": "GitHub",
+          "severity": "low",
+          "title": "Email registered on GitHub",
+          "description": "Your email address appears to be registered on GitHub.",
+          "url": null,
+          "found_at": "2026-01-27 06:51:40.608895"
+        },
+        {
+          "id": "11485820",
+          "category": "email_exposure",
+          "source": "Pinterest",
+          "severity": "low",
+          "title": "Email registered on Pinterest",
+          "description": "Your email address appears to be registered on Pinterest.",
+          "url": null,
+          "found_at": "2026-01-27 06:51:40.608919"
+        },
+        {
+          "id": "d549bc1a",
+          "category": "username_found",
+          "source": "Instagram",
+          "severity": "low",
+          "title": "Username found on Instagram",
+          "description": "The username 'koffandaff' was found on Instagram.",
+          "url": "https://instagram.com/koffandaff",
+          "found_at": "2026-01-27 06:51:40.640356"
+        },
+        {
+          "id": "42ad8519",
+          "category": "username_found",
+          "source": "Facebook",
+          "severity": "low",
+          "title": "Username found on Facebook",
+          "description": "The username 'koffandaff' was found on Facebook.",
+          "url": "https://facebook.com/koffandaff",
+          "found_at": "2026-01-27 06:51:40.640585"
+        },
+        {
+          "id": "fb9b57e7",
+          "category": "username_found",
+          "source": "Linkedin",
+          "severity": "low",
+          "title": "Username found on Linkedin",
+          "description": "The username 'koffandaff' was found on Linkedin.",
+          "url": "https://linkedin.com/in/koffandaff",
+          "found_at": "2026-01-27 06:51:40.640624"
+        },
+        {
+          "id": "fc597244",
+          "category": "username_found",
+          "source": "Reddit",
+          "severity": "low",
+          "title": "Username found on Reddit",
+          "description": "The username 'koffandaff' was found on Reddit.",
+          "url": "https://reddit.com/user/koffandaff",
+          "found_at": "2026-01-27 06:51:40.640648"
+        },
+        {
+          "id": "20aba9ec",
+          "category": "username_found",
+          "source": "Github",
+          "severity": "low",
+          "title": "Username found on Github",
+          "description": "The username 'koffandaff' was found on Github.",
+          "url": "https://github.com/koffandaff",
+          "found_at": "2026-01-27 06:51:40.640669"
+        },
+        {
+          "id": "64506329",
+          "category": "username_found",
+          "source": "Discord",
+          "severity": "low",
+          "title": "Username found on Discord",
+          "description": "The username 'koffandaff' was found on Discord.",
+          "url": null,
+          "found_at": "2026-01-27 06:51:40.640690"
+        },
+        {
+          "id": "49f3e992",
+          "category": "public_info",
+          "source": "Global Metadata",
+          "severity": "low",
+          "title": "Phone Number Metadata Analyzed",
+          "description": "Initial analysis for +91 9824998490 performed. No active data leaks found in public records.",
+          "url": null,
+          "found_at": "2026-01-27 06:51:40.677662"
+        }
+      ],
+      "recommendations": [
+        "\ud83d\udcf1 Review privacy settings on your social media accounts.",
+        "\u2705 Your digital footprint is relatively secure. Keep monitoring regularly.",
+        "\ud83d\udd0d Enable two-factor authentication on all important accounts.",
+        "\ud83d\uddd1\ufe0f Delete accounts you no longer use to reduce your attack surface."
+      ],
+      "status": "completed",
+      "progress": 100,
+      "started_at": "2026-01-27 06:51:39.432636",
+      "completed_at": "2026-01-27T06:51:40.768826",
+      "error_message": null
     }
   ]
 }

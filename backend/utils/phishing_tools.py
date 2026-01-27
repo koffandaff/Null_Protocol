@@ -58,6 +58,7 @@ class PhishingTools:
             'ssl_valid': None,
             'domain_age_days': None,
             'reputation': None,
+            'virustotal': None,
             'error': None
         }
         
@@ -97,6 +98,21 @@ class PhishingTools:
             if is_trusted:
                 risk_score = risk_score * 0.1
             
+            # VirusTotal URL Check (if API key is available)
+            vt_result = self._check_virustotal_url(url)
+            if vt_result:
+                results['virustotal'] = vt_result
+                # If VT detected malicious, boost risk score
+                if vt_result.get('positives', 0) > 0:
+                    vt_boost = min(0.5, vt_result['positives'] / 20)
+                    risk_score = min(1.0, risk_score + vt_boost)
+                    results['indicators'].append({
+                        'indicator': PhishingIndicator.VIRUSTOTAL_DETECTION,
+                        'present': True,
+                        'score': vt_boost,
+                        'details': f"VirusTotal: {vt_result['positives']}/{vt_result['total']} engines flagged this URL"
+                    })
+            
             results['risk_score'] = round(risk_score, 2)
             results['is_phishing'] = risk_score >= self.phishing_threshold
             
@@ -114,6 +130,45 @@ class PhishingTools:
         
         results['scan_duration_ms'] = int((time.time() - start_time) * 1000)
         return results
+
+    def _check_virustotal_url(self, url: str) -> Optional[Dict]:
+        """Check URL against VirusTotal API"""
+        try:
+            vt_key = settings.VIRUSTOTAL_API_KEY
+            if not vt_key:
+                return None
+            
+            # VirusTotal v3 API - Get URL ID first
+            import base64
+            url_id = base64.urlsafe_b64encode(url.encode()).decode().strip("=")
+            
+            headers = {
+                'x-apikey': vt_key,
+                'Accept': 'application/json'
+            }
+            
+            with httpx.Client(timeout=15) as client:
+                response = client.get(
+                    f'https://www.virustotal.com/api/v3/urls/{url_id}',
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    stats = data.get('data', {}).get('attributes', {}).get('last_analysis_stats', {})
+                    return {
+                        'positives': stats.get('malicious', 0) + stats.get('phishing', 0),
+                        'total': sum(stats.values()),
+                        'categories': data.get('data', {}).get('attributes', {}).get('categories', {}),
+                        'permalink': f"https://www.virustotal.com/gui/url/{url_id}"
+                    }
+                elif response.status_code == 404:
+                    # URL not in VT database - submit it
+                    return {'positives': 0, 'total': 0, 'note': 'URL not yet scanned by VirusTotal'}
+        except Exception as e:
+            return {'error': str(e)}
+        
+        return None
 
     def _get_actual_domain_age(self, domain: str) -> Optional[int]:
         """Fetch real domain age in days using WHOIS"""

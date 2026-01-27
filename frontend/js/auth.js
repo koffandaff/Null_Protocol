@@ -35,6 +35,10 @@ class Auth {
     static getUser() {
         return JSON.parse(localStorage.getItem('user'));
     }
+
+    static getCurrentUser() {
+        return this.getUser();
+    }
 }
 
 export default Auth;

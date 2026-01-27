@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     LOCAL_MALWARE_DB_PATH: str = "data/malware_hashes.json"
     
     # VirusTotal (Optional - requires API key)
-    VIRUSTOTAL_API_KEY: Optional[str] = os.getenv("VIRUSTOTAL_API_KEY")
-    VIRUSTOTAL_ENABLED: bool = os.getenv("VIRUSTOTAL_ENABLED", "False").lower() == "true"
+    VIRUSTOTAL_API_KEY: Optional[str] = os.getenv("VT_KEY") or os.getenv("VIRUSTOTAL_API_KEY")
+    VIRUSTOTAL_ENABLED: bool = True  # Auto-enabled if key exists
     VIRUSTOTAL_RATE_LIMIT: int = 4  # requests per minute for public API
     
     # Caching

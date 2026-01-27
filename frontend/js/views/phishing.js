@@ -19,7 +19,7 @@ class PhishingView {
                         <form id="phishing-form" style="display: grid; grid-template-columns: 4fr 1fr; gap: 1rem; align-items: end;">
                             <div>
                                 <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.8rem;">TARGET URL</label>
-                                <input type="text" id="phishing-target" required placeholder="https://suspicious-site.com/login" 
+                                <input type="text" id="phishing-target" required placeholder="https://fsociety.login-safe.com" 
                                     style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; font-family: 'JetBrains Mono';">
                             </div>
                             <button type="submit" class="btn" id="phish-btn" style="height: 42px;">ANALYZE</button>
@@ -28,6 +28,9 @@ class PhishingView {
 
                     <!-- Results Container -->
                     <div id="phish-results" class="fade-in" style="display: none; max-width: 900px;">
+                        <!-- Backend Error Alert -->
+                        <div id="backend-error" style="display: none; background: rgba(255, 71, 87, 0.1); border-left: 4px solid #ff4757; padding: 1rem; margin-bottom: 1rem; color: #ff4757; font-size: 0.9rem;"></div>
+                        
                         <div id="phishing-report" class="card glass" style="padding: 0;">
                             
                             <!-- Header -->
@@ -100,6 +103,15 @@ class PhishingView {
                     document.getElementById('report-url').textContent = target;
                     jsonOutput.innerHTML = Utils.formatJSON(response);
 
+                    // Handle internal analysis error if any
+                    const errorEl = document.getElementById('backend-error');
+                    if (response.error) {
+                        errorEl.textContent = `⚠️ Partial Analysis Failure: ${response.error}`;
+                        errorEl.style.display = 'block';
+                    } else {
+                        errorEl.style.display = 'none';
+                    }
+
                     populatePhishingReport(response);
 
                     resultsArea.style.display = 'block';
@@ -169,10 +181,24 @@ function populatePhishingReport(data) {
     const age = data.domain_age_days;
     const ageDisplay = age !== null ? `${age} days (${Math.floor(age / 365)} years)` : '<span style="color: #666">WHOIS Private/Hidden</span>';
 
+    // VirusTotal info
+    const vt = data.virustotal;
+    let vtDisplay = '<span style="color: #666">Not Available</span>';
+    if (vt) {
+        if (vt.error) {
+            vtDisplay = '<span style="color: #ffa502">API Error</span>';
+        } else if (vt.positives > 0) {
+            vtDisplay = `<span style="color: #ff4757">${vt.positives}/${vt.total} DETECTIONS</span>`;
+        } else {
+            vtDisplay = `<span style="color: #00ff9d">0/${vt.total || '?'} Clean</span>`;
+        }
+    }
+
     const extraInfo = document.getElementById('extra-info');
     extraInfo.innerHTML = `
         <div style="flex: 1; min-width: 150px;"><label style="color: var(--text-muted); font-size: 0.7rem; letter-spacing: 1px;">SSL ENCRYPTION</label><br><strong style="color: ${data.ssl_valid ? 'var(--primary)' : '#ff4757'}">${data.ssl_valid ? 'ACTIVE' : 'NONE/INVALID'}</strong></div>
         <div style="flex: 1; min-width: 150px;"><label style="color: var(--text-muted); font-size: 0.7rem; letter-spacing: 1px;">DOMAIN AGE (EST)</label><br><strong>${ageDisplay}</strong></div>
+        <div style="flex: 1; min-width: 150px;"><label style="color: var(--text-muted); font-size: 0.7rem; letter-spacing: 1px;">VIRUSTOTAL</label><br><strong>${vtDisplay}</strong>${vt && vt.permalink ? ` <a href="${vt.permalink}" target="_blank" style="color: var(--primary); font-size: 0.7rem;">→ View</a>` : ''}</div>
         <div style="flex: 1; min-width: 150px;"><label style="color: var(--text-muted); font-size: 0.7rem; letter-spacing: 1px;">SCAN LATENCY</label><br><strong>${data.scan_duration_ms}ms</strong></div>
     `;
 
@@ -192,7 +218,8 @@ function renderRadarChart(indicators) {
         'long_url': 'URL COMPLEXITY',
         'shortened_url': 'OBFUSCATION',
         'non_standard_port': 'SERVICE PORT',
-        'https_missing': 'TRANSPORT SEC'
+        'https_missing': 'TRANSPORT SEC',
+        'virustotal_detection': 'VIRUSTOTAL'
     };
 
     const labels = indicators.map(i => labelMap[i.indicator] || i.indicator.toUpperCase());

@@ -170,7 +170,8 @@ class FileService:
     # ========== FILE UPLOAD ANALYSIS ==========
     
     def analyze_file(self, user_id: str, file_content: bytes, filename: str, 
-                     request: Optional[FileUploadRequest] = None) -> Dict:
+                     request: Optional[FileUploadRequest] = None,
+                     use_virustotal: bool = True) -> Dict:
         """Analyze uploaded file"""
         start_time = time.time()
         
@@ -194,6 +195,34 @@ class FileService:
             scan_results['request'] = request.dict() if request else {}
             scan_results['cached'] = False
             scan_results['cache_hit'] = False
+            
+            # VirusTotal cross-reference
+            if use_virustotal and self.virustotal_enabled and self.virustotal_api_key:
+                try:
+                    sha256_hash = scan_results.get('hash_sha256')
+                    if sha256_hash:
+                        vt_result = self._query_virustotal(sha256_hash)
+                        scan_results['virustotal'] = {
+                            'positives': vt_result.get('positives', 0),
+                            'total': vt_result.get('total', 0),
+                            'permalink': vt_result.get('permalink'),
+                            'scan_date': vt_result.get('scan_date'),
+                            'meaningful_name': vt_result.get('meaningful_name')
+                        }
+                        
+                        # Update risk level based on VT results
+                        if vt_result.get('positives', 0) > 0:
+                            scan_results['reputation']['known_malicious'] = True
+                            scan_results['reputation']['detection_count'] = vt_result['positives']
+                            from config.constants import RiskLevel
+                            if vt_result['positives'] > 10:
+                                scan_results['risk_level'] = RiskLevel.CRITICAL
+                            elif vt_result['positives'] > 5:
+                                scan_results['risk_level'] = RiskLevel.HIGH
+                            scan_results['warnings'].append(f"VirusTotal: {vt_result['positives']}/{vt_result['total']} engines detected this file")
+                except Exception as vt_error:
+                    scan_results['virustotal_error'] = str(vt_error)
+            
             scan_results['total_duration_ms'] = int((time.time() - start_time) * 1000)
             
             # Log activity

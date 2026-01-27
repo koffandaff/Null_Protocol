@@ -57,6 +57,7 @@ class PhishingIndicator(str, Enum):
     LONG_URL = "long_url"
     SHORTENED_URL = "shortened_url"
     NON_STANDARD_PORT = "non_standard_port"
+    VIRUSTOTAL_DETECTION = "virustotal_detection"
 
 # Common technology fingerprints (Frameworks, Languages, Servers, Analytics)
 TECHNOLOGY_PATTERNS = {

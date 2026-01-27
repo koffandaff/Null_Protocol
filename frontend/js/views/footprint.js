@@ -67,15 +67,19 @@ class FootprintView {
                         </div>
                     </div>
 
-                    <!-- Email & Username -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <!-- Email, Username & Phone -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                         <div>
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Email Address *</label>
-                            <input type="email" id="scan-email" required placeholder="your@email.com" style="width: 100%;">
+                            <input type="email" id="scan-email" required style="width: 100%;">
                         </div>
                         <div>
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Common Username *</label>
-                            <input type="text" id="scan-username" required placeholder="your_username" minlength="2" maxlength="50" style="width: 100%;">
+                            <input type="text" id="scan-username" required minlength="2" maxlength="50" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mobile Number (Optional)</label>
+                            <input type="tel" id="scan-phone" placeholder="+1 234 567 890" style="width: 100%;">
                         </div>
                     </div>
 
@@ -214,9 +218,9 @@ class FootprintView {
 
                 <!-- Actions -->
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <button id="download-pdf-btn" class="btn" style="flex: 1;">
-                        <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 0.5rem;">download</span>
-                        Download PDF Report
+                    <button id="download-pdf-btn" class="btn" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <span class="material-symbols-outlined">picture_as_pdf</span>
+                        EXPORT PDF
                     </button>
                     <button id="new-scan-btn" class="btn-outline" style="flex: 1;">
                         <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 0.5rem;">refresh</span>
@@ -352,6 +356,7 @@ class FootprintView {
 
         const email = document.getElementById('scan-email').value.trim();
         const username = document.getElementById('scan-username').value.trim();
+        const phoneNumber = document.getElementById('scan-phone').value.trim();
         const consent = document.getElementById('consent-checkbox').checked;
 
         const platforms = Array.from(document.querySelectorAll('input[name="platform"]:checked')).map(cb => cb.value);
@@ -370,6 +375,7 @@ class FootprintView {
             const response = await Api.post('/footprint/scan', {
                 email,
                 username,
+                phone_number: phoneNumber || null,
                 platforms,
                 reuses_passwords: reusesPasswords,
                 email_in_directories: emailInDirectories,

@@ -6,6 +6,15 @@ from routers.dependencies import get_current_user
 
 router = APIRouter()
 
+@router.get("/servers")
+async def get_available_servers(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get list of available Fsociety VPN nodes.
+    """
+    return vpn_service.get_available_servers()
+
 @router.post("/openvpn", response_model=VPNConfigResponse)
 async def generate_openvpn_config(
     request: VPNConfigRequest,

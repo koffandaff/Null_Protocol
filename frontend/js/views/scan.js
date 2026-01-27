@@ -33,6 +33,11 @@ class ScanView {
                             </div>
 
                             <button type="submit" class="btn" id="scan-btn">INITIATE SCAN</button>
+
+                            <!-- Progress Bar -->
+                            <div style="margin-top: 1rem;">
+                                ${Components.renderProgressBar('scan-progress')}
+                            </div>
                         </form>
                     </div>
 
@@ -169,6 +174,9 @@ class ScanView {
             btn.textContent = 'SCANNING...';
             btn.disabled = true;
             resultsArea.style.display = 'none';
+
+            // Start Progress Visualization
+            Utils.visualizeProgress('scan-progress', 2500, ['Resolving Host...', 'Mapping Attack Surface...', 'Identifying Services...', 'Finalizing Report...']);
 
             try {
                 let endpoint = `/scans/${type}`;

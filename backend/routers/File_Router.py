@@ -76,6 +76,7 @@ async def analyze_file_upload(
     file: UploadFile = File(..., description="File to analyze"),
     description: Optional[str] = Query(None, description="Optional description"),
     password_protected: bool = Query(False, description="Is the file password protected?"),
+    use_virustotal: bool = Query(True, description="Cross-reference hash with VirusTotal"),
     current_user: dict = Depends(get_current_user)
 ):
     """Analyze uploaded file"""
@@ -91,7 +92,7 @@ async def analyze_file_upload(
         
         # Analyze file
         results = file_service.analyze_file(
-            current_user['id'], content, file.filename, request
+            current_user['id'], content, file.filename, request, use_virustotal=use_virustotal
         )
         
         return results

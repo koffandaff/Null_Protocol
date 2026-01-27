@@ -64,6 +64,44 @@ class Utils {
             .replace(/`(.*)`/g, '<code style="background: rgba(0,255,157,0.1); padding: 2px 6px; border-radius: 4px; color: var(--primary); font-family: \'JetBrains Mono\';">$1</code>')
             .replace(/\n/g, '<br>');
     }
+
+    static async visualizeProgress(id, duration, steps) {
+        const bar = document.getElementById(`${id}-bar`);
+        const text = document.getElementById(`${id}-text`);
+        const container = document.getElementById(`${id}-container`);
+
+        container.style.display = 'block';
+        text.style.display = 'block';
+        bar.style.width = '0%';
+
+        const interval = duration / 100;
+        let progress = 0;
+        let stepIdx = 0;
+
+        return new Promise(resolve => {
+            const timer = setInterval(() => {
+                progress += 1;
+                bar.style.width = `${progress}%`;
+
+                // Update text based on progress milestones
+                if (steps && steps.length > 0) {
+                    if (progress > ((stepIdx + 1) * (100 / steps.length))) {
+                        stepIdx++;
+                        if (stepIdx < steps.length) {
+                            text.textContent = steps[stepIdx];
+                        }
+                    } else if (stepIdx === 0 && progress < (100 / steps.length)) {
+                        text.textContent = steps[0];
+                    }
+                }
+
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    setTimeout(resolve, 300);
+                }
+            }, interval);
+        });
+    }
 }
 
 export default Utils;

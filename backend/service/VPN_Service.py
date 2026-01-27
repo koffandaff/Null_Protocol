@@ -1,6 +1,6 @@
 from datetime import datetime
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict
 from model.VPN_Model import VPNConfigRequest, WireGuardRequest, VPNConfigResponse, VPNKeys
 from utils.vpn_tools import vpn_tools
 from model.Auth_Model import db  # Using the shared TempDb instance
@@ -9,19 +9,49 @@ class VPNService:
     
     def __init__(self):
         # In a real app, we would store these in a database
-        # For now, we'll use the in-memory db from Auth_Model or a local dict
         if not hasattr(db, 'vpn_configs'):
-            db.vpn_configs = {} # dynamically add vpn_configs dict to the db instance
+            db.vpn_configs = {} 
+
+        # Defined VPN Servers for our "Service"
+        self.available_servers = [
+            {"id": "us-east", "name": "USA - New York", "address": "us-east.fsociety.vpn", "region": "Americas", "load": "42%"},
+            {"id": "eu-central", "name": "Germany - Frankfurt", "address": "de-fra.fsociety.vpn", "region": "Europe", "load": "18%"},
+            {"id": "asia-east", "name": "Japan - Tokyo", "address": "jp-tk.fsociety.vpn", "region": "Asia", "load": "65%"},
+            {"id": "in-west", "name": "India - Mumbai", "address": "in-mum.fsociety.vpn", "region": "Asia", "load": "20%"}
+        ]
+
+    def get_available_servers(self) -> List[Dict]:
+        """Return list of available VPN servers"""
+        return self.available_servers
 
     def generate_openvpn_config(self, request: VPNConfigRequest, user_id: str) -> VPNConfigResponse:
         """
         Generate an OpenVPN configuration.
         """
-        # Mocking CA and Client cert generation for this example
-        # In production, this would interact with a PKI system
-        mock_ca = "-----BEGIN CERTIFICATE-----\nMOCK_CA_CERT\n-----END CERTIFICATE-----"
-        mock_cert = "-----BEGIN CERTIFICATE-----\nMOCK_CLIENT_CERT\n-----END CERTIFICATE-----"
-        mock_key = "-----BEGIN PRIVATE KEY-----\nMOCK_PRIVATE_KEY\n-----END PRIVATE KEY-----"
+        import base64
+        import secrets
+        
+        # If it's a server from our list, we could customize even more
+        server_name = f"Fsociety-{request.server_address}"
+        server_id = "custom"
+        for s in self.available_servers:
+            if s['address'] == request.server_address:
+                server_name = s['name']
+                server_id = s['id']
+                break
+
+        # Generate realistic-looking but simulated certificates
+        # These are properly formatted PEM blocks with valid base64 content
+        def generate_fake_pem(label: str, size: int = 256) -> str:
+            random_bytes = secrets.token_bytes(size)
+            b64_content = base64.b64encode(random_bytes).decode('ascii')
+            # Split into 64-char lines for proper PEM format
+            lines = [b64_content[i:i+64] for i in range(0, len(b64_content), 64)]
+            return f"-----BEGIN {label}-----\n" + "\n".join(lines) + f"\n-----END {label}-----"
+
+        mock_ca = generate_fake_pem("CERTIFICATE", 512)
+        mock_cert = generate_fake_pem("CERTIFICATE", 384)
+        mock_key = generate_fake_pem("PRIVATE KEY", 256)
         
         config_content = vpn_tools.generate_openvpn_config(
             server_ip=request.server_address,
@@ -34,11 +64,16 @@ class VPNService:
         
         config_id = str(uuid.uuid4())
         
+        # Create filename: username_fsociety_servername
+        safe_server_name = server_id.replace("-", "_").replace(" ", "_")
+        config_filename = f"{user_id}_fsociety_{safe_server_name}"
+        
         config = VPNConfigResponse(
             id=config_id,
             user_id=user_id,
             type="openvpn",
-            name=f"OpenVPN-{request.server_address}",
+            name=server_name,
+            filename=config_filename,
             config_content=config_content,
             created_at=datetime.utcnow()
         )

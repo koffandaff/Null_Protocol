@@ -34,6 +34,7 @@ class FootprintScanRequest(BaseModel):
     """Request to start a digital footprint scan"""
     email: EmailStr
     username: str = Field(..., min_length=2, max_length=50)
+    phone_number: Optional[str] = Field(None, description="Optional phone number with country code")
     platforms: List[str] = Field(default_factory=list, description="Selected social platforms")
     reuses_passwords: bool = False
     email_in_directories: Optional[str] = "unsure"  # yes, no, unsure
@@ -58,6 +59,7 @@ class FootprintScanResult(BaseModel):
     user_id: str
     email_scanned: str
     username_scanned: str
+    phone_scanned: Optional[str] = None
     platforms_checked: List[str]
     
     # Results
@@ -117,6 +119,7 @@ class FootprintDatabase:
             user_id=user_id,
             email_scanned=request.email,
             username_scanned=request.username,
+            phone_scanned=request.phone_number,
             platforms_checked=request.platforms,
             status="pending"
         )

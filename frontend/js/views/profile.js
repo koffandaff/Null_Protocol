@@ -26,11 +26,11 @@ class ProfileView {
                             </div>
                             <div style="margin-bottom: 1.5rem;">
                                 <label style="display: block; margin-bottom: 0.5rem;">Full Name</label>
-                                <input type="text" id="full_name" value="${user.full_name || ''}" placeholder="Enter full name">
+                                <input type="text" id="full_name" value="${user.full_name || ''}">
                             </div>
                             <div style="margin-bottom: 1.5rem;">
                                 <label style="display: block; margin-bottom: 0.5rem;">Bio</label>
-                                <textarea id="bio" rows="4" placeholder="Tell us about yourself...">${user.bio || ''}</textarea>
+                                <textarea id="bio" rows="4">${user.bio || ''}</textarea>
                             </div>
                             <button type="submit" class="btn">UPDATE PROFILE</button>
                         </form>

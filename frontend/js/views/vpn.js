@@ -4,41 +4,146 @@ import Auth from '../auth.js';
 import Components from '../components.js';
 
 class VpnView {
+    constructor() {
+        this.selectedServer = null;
+        this.currentUser = null;
+    }
+
     async render() {
+        // Get current user for filename
+        this.currentUser = Auth.getCurrentUser();
+        const username = this.currentUser?.username || 'user';
+
         return `
             ${Components.renderNavbar()}
             <div style="display: flex; height: 100vh; padding-top: 60px;">
                 ${Components.renderSidebar('vpn')}
 
                 <div style="flex: 1; padding: 2rem; overflow-y: auto;">
-                    <h1 class="page-title fade-in">VPN Configuration</h1>
+                    <h1 class="page-title fade-in">Fsociety Secure Tunnel</h1>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                        <div class="card glass fade-in">
-                            <h3 style="margin-bottom: 1.5rem;">Generate Config</h3>
-                            <div style="margin-bottom: 1.5rem;">
-                                <button class="btn" id="tab-openvpn" style="margin-right: 0.5rem;">OpenVPN</button>
-                                <button class="btn-outline" id="tab-wireguard">WireGuard</button>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; max-width: 1200px; margin: 0 auto;">
+                        
+                        <!-- Connection Center -->
+                        <div class="card glass fade-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; position: relative; overflow: hidden;">
+                            <!-- Connection Status -->
+                            <div id="connection-status" style="position: absolute; top: 1.5rem; left: 1.5rem; display: flex; align-items: center; gap: 0.5rem; opacity: 0.7;">
+                                <span class="material-symbols-outlined" style="color: var(--text-muted);">public</span>
+                                <span id="status-text" style="font-size: 0.9rem; letter-spacing: 1px;">DISCONNECTED</span>
                             </div>
-                            <form id="vpn-form">
-                                <input type="hidden" id="vpn-type" value="openvpn">
-                                <div id="openvpn-fields">
-                                    <div style="margin-bottom: 1rem;"><label>Server Address</label><input type="text" id="server-addr" placeholder="vpn.example.com"></div>
-                                    <div style="margin-bottom: 1rem;"><label>Port</label><input type="number" id="port" value="1194"></div>
-                                    <div style="margin-bottom: 1rem;"><label>Protocol</label><select id="protocol"><option value="udp">UDP</option><option value="tcp">TCP</option></select></div>
-                                </div>
-                                <div id="wireguard-fields" style="display: none;">
-                                    <div style="margin-bottom: 1rem;"><label>Server Public Key</label><input type="text" id="server-pubkey" placeholder="Base64 Key"></div>
-                                    <div style="margin-bottom: 1rem;"><label>Server Endpoint</label><input type="text" id="server-endpoint" placeholder="vpn.example.com:51820"></div>
-                                </div>
-                                <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">GENERATE CONFIG</button>
-                            </form>
+
+                            <!-- Big Connect Button -->
+                            <div id="connect-wrapper">
+                                <button id="connect-btn" class="big-connect-btn">
+                                    <span class="material-symbols-outlined" style="font-size: 3rem; margin-bottom: 0.5rem;">power_settings_new</span>
+                                    CONNECT
+                                </button>
+                            </div>
+
+                            <!-- Selected Server Info -->
+                            <div id="selected-info" style="margin-top: 2rem; text-align: center; height: 50px;">
+                                <div style="font-size: 1.2rem; font-weight: bold; color: var(--text-main);">Select a Node</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Choose a location to route traffic</div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div style="width: 80%; max-width: 400px;">
+                                ${Components.renderProgressBar('vpn-connect')}
+                            </div>
+
+                            <!-- Download Ready Action (Hidden initially) -->
+                            <div id="download-action" style="display: none; text-align: center; margin-top: 1rem;">
+                                <div style="font-size: 1.1rem; color: var(--primary); margin-bottom: 0.5rem;">Profile Generated Successfully</div>
+                                <button id="dl-config-btn" class="btn" style="display: flex; align-items: center; gap: 0.5rem; margin: 0 auto;">
+                                    <span class="material-symbols-outlined">download</span> Download Profile (.ovpn)
+                                </button>
+                            </div>
                         </div>
-                        <div class="card glass fade-in" style="animation-delay: 0.1s;">
-                            <h3 style="margin-bottom: 1.5rem;">My Configurations</h3>
-                            <div id="config-list" style="display: flex; flex-direction: column; gap: 1rem;">
-                                <p style="color: var(--text-muted); text-align: center;">Loading configs...</p>
+
+                        <!-- Server & Config Sidebar -->
+                        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                            
+                            <!-- Server List -->
+                            <div class="card glass fade-in" style="flex: 1; max-height: 400px; display: flex; flex-direction: column;">
+                                <h3 style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); letter-spacing: 1px;">AVAILABLE NODES</h3>
+                                <div id="node-list" style="overflow-y: auto; flex: 1; padding-right: 0.5rem;">
+                                    <p style="color: var(--text-muted); text-align: center;">Scanning network...</p>
+                                </div>
                             </div>
+
+                            <!-- Recent Configs -->
+                            <div class="card glass fade-in" style="flex: 1; animation-delay: 0.1s;">
+                                <h3 style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); letter-spacing: 1px;">HISTORY</h3>
+                                <div id="config-list" style="display: flex; flex-direction: column; gap: 0.8rem;"></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Usage Guide Section -->
+                    <div class="card glass fade-in" style="margin-top: 2rem; max-width: 1200px; margin-left: auto; margin-right: auto;">
+                        <h3 style="margin-bottom: 1.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="material-symbols-outlined">help</span> How to Use Your VPN Profile
+                        </h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                            
+                            <!-- GUI Method -->
+                            <div>
+                                <h4 style="color: var(--secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 0.3rem; font-size: 1rem;">desktop_windows</span>
+                                    Desktop (GUI)
+                                </h4>
+                                <ol style="color: var(--text-main); font-size: 0.85rem; line-height: 1.8; padding-left: 1.2rem;">
+                                    <li>Download <a href="https://openvpn.net/client/" target="_blank" style="color: var(--primary);">OpenVPN Connect</a></li>
+                                    <li>Open the app and click <strong>Import Profile</strong></li>
+                                    <li>Select your downloaded <code>.ovpn</code> file</li>
+                                    <li>Toggle the connection switch to <strong>ON</strong></li>
+                                </ol>
+                            </div>
+
+                            <!-- CLI Method -->
+                            <div>
+                                <h4 style="color: var(--secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 0.3rem; font-size: 1rem;">terminal</span>
+                                    Command Line (Linux/macOS)
+                                </h4>
+                                <div style="background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.8; overflow-x: auto;">
+                                    <div style="color: var(--text-muted);"># Install OpenVPN (Ubuntu/Debian)</div>
+                                    <div style="color: var(--primary);">sudo apt install openvpn -y</div>
+                                    <br>
+                                    <div style="color: var(--text-muted);"># Install OpenVPN (macOS)</div>
+                                    <div style="color: var(--primary);">brew install openvpn</div>
+                                    <br>
+                                    <div style="color: var(--text-muted);"># Connect using your profile</div>
+                                    <div style="color: var(--primary);">sudo openvpn --config ~/Downloads/<span id="cli-filename">[your_file].ovpn</span></div>
+                                    <br>
+                                    <div style="color: var(--text-muted);"># Run in background (daemon mode)</div>
+                                    <div style="color: var(--primary);">sudo openvpn --config ~/Downloads/[file].ovpn --daemon</div>
+                                </div>
+                            </div>
+
+                            <!-- Mobile Method -->
+                            <div>
+                                <h4 style="color: var(--secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                                    <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 0.3rem; font-size: 1rem;">smartphone</span>
+                                    Mobile (iOS/Android)
+                                </h4>
+                                <ol style="color: var(--text-main); font-size: 0.85rem; line-height: 1.8; padding-left: 1.2rem;">
+                                    <li>Install <strong>OpenVPN Connect</strong> from App/Play Store</li>
+                                    <li>Transfer <code>.ovpn</code> file to your device</li>
+                                    <li>Open the file with OpenVPN Connect</li>
+                                    <li>Tap <strong>Add</strong> then toggle to connect</li>
+                                </ol>
+                            </div>
+
+                        </div>
+
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,165,2,0.1); border-left: 3px solid #ffa502; border-radius: 4px;">
+                            <strong style="color: #ffa502;">⚠️ Demo Notice:</strong>
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">
+                                These are simulated VPN configurations for demonstration purposes. The certificates are randomly generated and will not connect to a real VPN server.
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -48,48 +153,145 @@ class VpnView {
 
     async afterRender() {
         document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
-        const form = document.getElementById('vpn-form');
-        const typeInput = document.getElementById('vpn-type');
-        const openvpnFields = document.getElementById('openvpn-fields');
-        const wireguardFields = document.getElementById('wireguard-fields');
-        const tabOpenvpn = document.getElementById('tab-openvpn');
-        const tabWireguard = document.getElementById('tab-wireguard');
-
-        tabOpenvpn.addEventListener('click', () => {
-            typeInput.value = 'openvpn';
-            openvpnFields.style.display = 'block';
-            wireguardFields.style.display = 'none';
-            tabOpenvpn.className = 'btn';
-            tabWireguard.className = 'btn-outline';
-        });
-
-        tabWireguard.addEventListener('click', () => {
-            typeInput.value = 'wireguard';
-            openvpnFields.style.display = 'none';
-            wireguardFields.style.display = 'block';
-            tabOpenvpn.className = 'btn-outline';
-            tabWireguard.className = 'btn';
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const type = typeInput.value;
-            let body = {};
-            let endpoint = '';
-            if (type === 'openvpn') {
-                body = { server_address: document.getElementById('server-addr').value, port: parseInt(document.getElementById('port').value), protocol: document.getElementById('protocol').value };
-                endpoint = '/vpn/openvpn';
-            } else {
-                body = { server_public_key: document.getElementById('server-pubkey').value, server_endpoint: document.getElementById('server-endpoint').value };
-                endpoint = '/vpn/wireguard';
-            }
-            try {
-                await Api.post(endpoint, body);
-                Utils.showToast('Config Generated', 'success');
-                this.loadConfigs();
-            } catch (error) { Utils.showToast(error.message, 'error'); }
-        });
+        this.loadServers();
         this.loadConfigs();
+
+        const connectBtn = document.getElementById('connect-btn');
+        const list = document.getElementById('node-list');
+        const dlAction = document.getElementById('download-action');
+        const dlBtn = document.getElementById('dl-config-btn');
+        const statusText = document.getElementById('status-text');
+        const selectedInfo = document.getElementById('selected-info');
+
+        // Connect Button Click Handler
+        connectBtn.addEventListener('click', async () => {
+            if (!this.selectedServer) {
+                Utils.showToast('Please select a server node first', 'info');
+                list.style.borderColor = 'var(--primary)';
+                setTimeout(() => list.style.borderColor = 'transparent', 500);
+                return;
+            }
+
+            // Reset UI
+            dlAction.style.display = 'none';
+            connectBtn.disabled = true;
+            connectBtn.style.opacity = '0.5';
+            statusText.textContent = 'GENERATING PROFILE...';
+            statusText.style.color = '#ffa502';
+
+            // Start Progress Simulation
+            await Utils.visualizeProgress('vpn-connect', 2000,
+                ['Generating Keys...', 'Creating Certificates...', 'Building Config...', 'Finalizing...']);
+
+            // "Connection" Complete
+            statusText.textContent = 'PROFILE READY';
+            statusText.style.color = 'var(--primary)';
+            connectBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 3rem;">check_circle</span>READY';
+            connectBtn.style.borderColor = 'var(--primary)';
+            connectBtn.style.boxShadow = '0 0 50px rgba(0,255,157,0.4)';
+            connectBtn.style.animation = 'none';
+
+            dlAction.style.display = 'block';
+            Utils.showToast('Profile ready for download!', 'success');
+
+            // Setup Download Handler
+            dlBtn.onclick = () => this.triggerDownload();
+        });
+    }
+
+    async loadServers() {
+        try {
+            const servers = await Api.get('/vpn/servers');
+            const list = document.getElementById('node-list');
+
+            if (servers) {
+                list.innerHTML = servers.map(srv => `
+                    <div class="server-node glass-hover" data-id="${srv.id}" 
+                         style="padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                <span class="material-symbols-outlined" style="color: var(--primary);">dns</span>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.9rem;">${srv.name}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">${srv.region}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: ${parseInt(srv.load) > 50 ? '#ff4757' : '#00ff9d'};">
+                                ${srv.load} Load
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add selection logic
+                list.querySelectorAll('.server-node').forEach(node => {
+                    node.addEventListener('click', () => {
+                        // Clear previous selection
+                        list.querySelectorAll('.server-node').forEach(n => n.style.background = 'transparent');
+                        list.querySelectorAll('.server-node').forEach(n => n.style.borderColor = 'transparent');
+
+                        // Set active
+                        node.style.background = 'rgba(0,255,157,0.1)';
+                        node.style.borderColor = 'var(--primary)';
+
+                        // Update State & UI
+                        const srv = servers.find(s => s.id === node.dataset.id);
+                        this.selectedServer = srv;
+
+                        const selectedInfo = document.getElementById('selected-info');
+                        selectedInfo.innerHTML = `
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">${srv.name}</div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted);">${srv.address} • UDP 1194</div>
+                        `;
+
+                        // Update CLI example filename
+                        const username = this.currentUser?.username || 'user';
+                        const cliFilename = document.getElementById('cli-filename');
+                        if (cliFilename) {
+                            cliFilename.textContent = `${username}_fsociety_${srv.id.replace('-', '_')}.ovpn`;
+                        }
+
+                        // Reset Button State
+                        const btn = document.getElementById('connect-btn');
+                        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 3rem; margin-bottom: 0.5rem;">power_settings_new</span>CONNECT';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        document.getElementById('download-action').style.display = 'none';
+                        document.getElementById('status-text').textContent = 'READY TO CONNECT';
+                        document.getElementById('status-text').style.color = 'var(--text-main)';
+                    });
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async triggerDownload() {
+        if (!this.selectedServer) return;
+
+        try {
+            const srv = this.selectedServer;
+            const response = await Api.post('/vpn/openvpn', {
+                server_address: srv.address,
+                port: 1194,
+                protocol: 'udp'
+            });
+
+            if (response && response.config_content) {
+                const blob = new Blob([response.config_content], { type: 'application/x-openvpn-profile' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // Use the filename from backend if available, otherwise generate one
+                const filename = response.filename || `${this.currentUser?.username || 'user'}_fsociety_${srv.id}`;
+                a.download = `${filename}.ovpn`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                Utils.showToast('Profile downloaded! Check guide below for usage.', 'success');
+                this.loadConfigs();
+            }
+        } catch (err) { Utils.showToast(err.message, 'error'); }
     }
 
     async loadConfigs() {
@@ -97,16 +299,30 @@ class VpnView {
             const configs = await Api.get('/vpn/configs');
             const list = document.getElementById('config-list');
             if (configs && configs.length > 0) {
-                list.innerHTML = configs.map(cfg => `
-                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                        <div><div style="font-weight: 600;">${cfg.name}</div><div style="font-size: 0.8rem; color: var(--text-muted);">${cfg.type.toUpperCase()} • ${Utils.parseDate(cfg.created_at)}</div></div>
-                        <button class="btn-outline" style="font-size: 0.8rem; padding: 0.25rem 0.75rem;">VIEW</button>
+                list.innerHTML = configs.slice(0, 3).map(cfg => `
+                    <div style="background: rgba(255,255,255,0.03); padding: 0.8rem; border-radius: 6px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600;">${cfg.name}</div>
+                            <div style="color: var(--text-muted); font-size: 0.7rem;">${Utils.parseDate(cfg.created_at)}</div>
+                        </div>
+                        <button class="btn-outline" style="padding: 2px 6px; font-size: 0.7rem;" onclick="downloadRaw('${btoa(cfg.config_content)}', '${cfg.filename || cfg.name}')">GET</button>
                     </div>
                 `).join('');
             } else {
-                list.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No configurations found.</p>';
+                list.innerHTML = '<div style="text-align: center; font-size: 0.8rem; color: var(--text-muted);">No history</div>';
             }
         } catch (e) { console.error(e); }
+
+        window.downloadRaw = (contentB64, name) => {
+            const content = atob(contentB64);
+            const blob = new Blob([content], { type: 'application/x-openvpn-profile' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${name.replace(/\s+/g, '_')}.ovpn`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        };
     }
 }
 

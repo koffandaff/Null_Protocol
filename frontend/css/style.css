@@ -381,3 +381,82 @@ input:focus {
         opacity: 1;
     }
 }
+/* Tab Buttons for File Analysis */
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    color: var(--text-main);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+
+/* Big Connect Button */
+.big-connect-btn {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,157,0.1) 0%, rgba(0,0,0,0) 70%);
+    border: 3px solid var(--primary);
+    box-shadow: 0 0 30px rgba(0,255,157,0.2), inset 0 0 20px rgba(0,255,157,0.1);
+    color: var(--primary);
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 3s infinite;
+}
+
+.big-connect-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px rgba(0,255,157,0.4), inset 0 0 30px rgba(0,255,157,0.2);
+    text-shadow: 0 0 10px var(--primary);
+}
+
+.big-connect-btn:active {
+    transform: scale(0.95);
+}
+
+/* Progress Bar Component */
+.fs-progress-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 1rem;
+    position: relative;
+    display: none;
+}
+
+.fs-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px var(--primary);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.4); }
+    70% { box-shadow: 0 0 0 20px rgba(0, 255, 157, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0); }
+}

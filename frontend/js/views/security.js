@@ -29,7 +29,7 @@ class SecurityView {
 
                             <div>
                                 <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.8rem;">TARGET ASSET</label>
-                                <input type="text" id="sec-target" required placeholder="https://example.com" 
+                                <input type="text" id="sec-target" required 
                                     style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; font-family: 'JetBrains Mono';">
                             </div>
 
@@ -46,8 +46,8 @@ class SecurityView {
                                 <button class="tab-btn active" data-tab="report">STRATEGIC REPORT</button>
                                 <button class="tab-btn" data-tab="raw">RAW DATA</button>
                             </div>
-                            <button onclick="downloadSecurityPDF()" style="background: var(--primary); color: black; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold; cursor: pointer;">
-                                <span class="material-icons" style="font-size: 1rem; vertical-align: middle;">picture_as_pdf</span> EXPORT PDF
+                            <button onclick="downloadSecurityPDF()" style="background: var(--primary); color: black; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="material-symbols-outlined" style="font-size: 1.1rem;">picture_as_pdf</span> EXPORT PDF
                             </button>
                         </div>
 
@@ -292,9 +292,9 @@ function populateSecurityReport(type, data) {
                 <div>
                     <strong style="color: var(--secondary)">Vulnerabilities Checked:</strong>
                     <ul style="list-style: none; padding: 0; margin-top: 0.5rem;">
-                        ${vulns.map(v => `
-                            <li style="margin-bottom: 0.2rem; color: ${v.affected ? '#ff4757' : '#888'};">
-                                <span class="material-icons" style="font-size: 0.8rem; vertical-align: middle;">
+                         ${vulns.map(v => `
+                            <li style="margin-bottom: 0.2rem; color: ${v.affected ? '#ff4757' : '#888'}; display: flex; align-items: center; gap: 0.4rem;">
+                                <span class="material-symbols-outlined" style="font-size: 1.1rem;">
                                     ${v.affected ? 'warning' : 'check_circle'}
                                 </span> 
                                 ${v.name.toUpperCase()}

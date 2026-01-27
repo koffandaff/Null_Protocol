@@ -161,7 +161,9 @@ class PhishingCheckResult(BaseModel):
     indicators: List[PhishingIndicatorInfo]
     ssl_valid: Optional[bool]
     domain_age_days: Optional[int]
-    reputation: Optional[Dict] = None  # For future external API integration
+    reputation: Optional[Dict] = None
+    virustotal: Optional[Dict] = None
+    error: Optional[str] = None
     scan_duration_ms: int
 
 # ========== TECHNOLOGY STACK MODELS ==========

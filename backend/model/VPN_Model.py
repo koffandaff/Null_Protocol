@@ -26,6 +26,7 @@ class VPNConfigResponse(BaseModel):
     user_id: str
     type: str  # openvpn or wireguard
     name: str
+    filename: Optional[str] = None
     config_content: str
     created_at: datetime
 

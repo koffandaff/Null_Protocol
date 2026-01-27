@@ -55,9 +55,18 @@ class Components {
             <a href="#/chat" id="floating-chat-link" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; text-decoration: none;">
                 <button style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(0, 255, 157, 0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.3s, box-shadow 0.3s;"
                         onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                    <i class="material-symbols-outlined" style="font-size: 1.8rem; color: #000;">smart_toy</i>
+                    <span class="material-symbols-outlined" style="font-size: 1.8rem; color: #000;">smart_toy</span>
                 </button>
             </a>
+        `;
+    }
+
+    static renderProgressBar(id = 'global-progress') {
+        return `
+            <div id="${id}-container" class="fs-progress-container">
+                <div id="${id}-bar" class="fs-progress-bar"></div>
+            </div>
+            <div id="${id}-text" style="text-align: center; margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted); display: none;">Initializing...</div>
         `;
     }
 }
