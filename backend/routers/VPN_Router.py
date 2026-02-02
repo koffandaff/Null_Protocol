@@ -1,14 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from typing import List, Optional
+from sqlalchemy.orm import Session
+
 from model.VPN_Model import VPNConfigRequest, WireGuardRequest, VPNConfigResponse
-from service.VPN_Service import vpn_service
+from service.VPN_Service import VPNService
 from routers.dependencies import get_current_user, get_current_user_optional
+from database.engine import get_db
 
 router = APIRouter()
 
+
+def get_vpn_service(db: Session = Depends(get_db)) -> VPNService:
+    """Get VPNService with database session"""
+    return VPNService(db)
+
+
 @router.get("/servers")
 async def get_available_servers(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    vpn_service: VPNService = Depends(get_vpn_service)
 ):
     """
     Get list of available Fsociety VPN nodes.
@@ -18,7 +28,8 @@ async def get_available_servers(
 @router.post("/openvpn", response_model=VPNConfigResponse)
 async def generate_openvpn_config(
     request: VPNConfigRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    vpn_service: VPNService = Depends(get_vpn_service)
 ):
     """
     Generate an OpenVPN configuration file.
@@ -35,7 +46,8 @@ async def generate_openvpn_config(
 @router.post("/wireguard", response_model=VPNConfigResponse)
 async def generate_wireguard_config(
     request: WireGuardRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    vpn_service: VPNService = Depends(get_vpn_service)
 ):
     """
     Generate a WireGuard configuration file.
@@ -51,7 +63,8 @@ async def generate_wireguard_config(
 
 @router.get("/configs", response_model=List[VPNConfigResponse])
 async def list_user_configs(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    vpn_service: VPNService = Depends(get_vpn_service)
 ):
     """
     List all VPN configurations created by the current user.
@@ -69,7 +82,8 @@ async def list_user_configs(
 @router.get("/server-setup")
 async def get_server_setup_files(
     x_server_secret: Optional[str] = Header(None, alias="X-Server-Secret"),
-    current_user: Optional[dict] = Depends(get_current_user_optional)
+    current_user: Optional[dict] = Depends(get_current_user_optional),
+    vpn_service: VPNService = Depends(get_vpn_service)
 ):
     """
     Get all PKI files needed to set up the OpenVPN server.

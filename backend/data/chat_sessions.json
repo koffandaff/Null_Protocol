@@ -389,6 +389,152 @@
       ],
       "created_at": "2026-01-28 11:01:11.795291",
       "updated_at": "2026-01-28T11:04:09.279436"
+    },
+    {
+      "id": "941cf750-2154-4236-973a-b57eff2c2064",
+      "user_id": "1adcdb21-7644-487e-9cce-602020b675ed",
+      "title": "hi",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2026-01-31 07:36:36.316788"
+        },
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2026-01-31 07:36:36.342289"
+        },
+        {
+          "role": "assistant",
+          "content": "Hello! How can I assist you today? Is there something specific you'd like to talk about related to cybersecurity or technology?",
+          "timestamp": "2026-01-31 07:36:38.154826"
+        },
+        {
+          "role": "user",
+          "content": "give me a python code to scan local ips",
+          "timestamp": "2026-01-31 07:37:20.454448"
+        },
+        {
+          "role": "assistant",
+          "content": "Certainly! You can use the `socket` module in Python to scan for open ports on local IPs. Below is a simple script that scans all IP addresses and checks for port 80 (HTTP) open:\n\n```python\nimport socket\n\ndef scan_ports(ip, ports):\n    \"\"\"Scan a list of ports on an IP address.\"\"\"\n    results = {}\n    for port in ports:\n        try:\n            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n            sock.settimeout(1)  # Timeout after 1 second\n            result = sock.connect_ex((ip, port))\n            if result == 0:\n                results[port] = \"Open\"\n            else:\n                results[port] = \"Closed\"\n        except Exception as e:\n            print(f\"Error scanning {ip}:{port} - {e}\")\n        finally:\n            sock.close()\n    return results\n\ndef scan_local_ips():\n    \"\"\"Scan all local IP addresses for open ports.\"\"\"\n    local_ips = []\n    # Get all network interfaces\n    net_if_addrs = socket.if_nameindex()\n    for index, name in net_if_addrs:\n        # Get the IP address of each interface\n        addr_info = socket.getaddrinfo(name, None)\n        for info in addr_info:\n            if info[0] == socket.AF_INET:  # IPv4\n                local_ips.append(info[4][0])\n\n    print(\"Scanning local IPs...\")\n    results = {}\n    ports_to_scan = [80]\n    \n    for ip in local_ips:\n        try:\n            result = scan_ports(ip, ports_to_scan)\n            results[ip] = result\n        except Exception as e:\n            print(f\"Error scanning {ip} - {e}\")\n\n    return results\n\nif __name__ == \"__main__\":\n    results = scan_local_ips()\n    for ip, port_results in results.items():\n        print(f\"IP: {ip}\")\n        for port, status in port_results.items():\n            print(f\"Port: {port}, Status: {status}\")\n```\n\n### Explanation:\n- **socket.socket(socket.AF_INET, socket.SOCK_STREAM)** creates a TCP socket.\n- **sock.connect_ex((ip, port))** attempts to connect to the specified IP and port. It returns 0 if the connection is successful, otherwise an error code.\n- **scan_ports(ip, ports)** scans multiple ports on a single IP address.\n- **scan_local_ips()** retrieves all local IP addresses associated with network interfaces and scans them for open ports.\n\nThis script will output which ports are open on each local IP. Adjust the `ports_to_scan` list to include other ports you want to check.",
+          "timestamp": "2026-01-31 07:37:32.232271"
+        },
+        {
+          "role": "user",
+          "content": "who is your creator",
+          "timestamp": "2026-01-31 07:37:46.717454"
+        },
+        {
+          "role": "assistant",
+          "content": "Cybiz was built by Dhruvil, an AI assistant designed for the Fsociety cybersecurity platform. I'm part of the team that works tirelessly to provide information and support on various security topics. If you have any questions or need further assistance, feel free to ask!",
+          "timestamp": "2026-01-31 07:37:49.057357"
+        }
+      ],
+      "created_at": "2026-01-31 07:36:36.316772",
+      "updated_at": "2026-01-31T07:37:49.057414"
+    },
+    {
+      "id": "76345336-48a1-484e-be08-b395d55672dd",
+      "user_id": "02410c0b-8da6-4b42-a76b-510f8764c766",
+      "title": "who are you",
+      "messages": [
+        {
+          "role": "user",
+          "content": "who are you",
+          "timestamp": "2026-02-02 11:20:09.212744"
+        },
+        {
+          "role": "user",
+          "content": "who are you",
+          "timestamp": "2026-02-02 11:20:09.249191"
+        },
+        {
+          "role": "assistant",
+          "content": "I'm Cybiz, a large language model developed by Dhruvil for the Fsociety cybersecurity platform. I assist users in various tasks related to cybersecurity, such as understanding vulnerabilities, creating ethical hacking tools, and providing guidance on best practices. How can I help you today?",
+          "timestamp": "2026-02-02 11:20:16.700887"
+        },
+        {
+          "role": "user",
+          "content": "how to find local ip give me python code and explanation",
+          "timestamp": "2026-02-02 11:20:28.957268"
+        },
+        {
+          "role": "assistant",
+          "content": "To find your local IP address using Python, you can use the `socket` module, which provides a portable way of using network services (such as TCP or UDP) in Python. Below is a simple script that demonstrates how to achieve this:\n\n```python\nimport socket\n\ndef get_local_ip():\n    try:\n        # Create a socket object\n        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)\n        \n        # Connect the socket to any address and port (0 will assign an available local address)\n        s.connect(('1.1.1.1', 80))\n        \n        # Get the local IP address from the socket's bound address\n        local_ip = s.getsockname()[0]\n        \n        # Close the socket\n        s.close()\n        \n        return local_ip\n    except Exception as e:\n        print(f\"Error: {e}\")\n        return None\n\nif __name__ == \"__main__\":\n    local_ip = get_local_ip()\n    if local_ip:\n        print(f\"Your local IP address is: {local_ip}\")\n    else:\n        print(\"Failed to retrieve local IP address.\")\n```\n\n### Explanation:\n\n1. **Socket Creation**: We create a socket object using `socket.socket(socket.AF_INET, socket.SOCK_DGRAM)`. This creates a UDP socket, which is suitable for this task.\n\n2. **Connecting the Socket**: The `s.connect(('1.1.1.1', 80))` line connects the socket to Google's public DNS server (1.1.1.1) on port 80. This helps in resolving the local IP address.\n\n3. **Getting Local IP Address**: After connecting, `s.getsockname()[0]` retrieves the local IP address from the socket\u2019s bound address, which is stored as a tuple `(local_ip, 0)`.\n\n4. **Closing the Socket**: It's important to close the socket using `s.close()` to free up resources.\n\n5. **Error Handling**: The script includes basic error handling to catch and print any exceptions that might occur during the process.\n\n6. **Main Execution Block**: The script checks if a local IP was successfully retrieved and prints it, or it indicates failure otherwise.\n\nThis method is straightforward and works well for most scenarios where you need to determine your local IPv4 address.",
+          "timestamp": "2026-02-02 11:20:39.672105"
+        }
+      ],
+      "created_at": "2026-02-02 11:20:09.212727",
+      "updated_at": "2026-02-02T11:20:39.672160"
+    },
+    {
+      "id": "bf6b751a-96a5-4b7d-8906-0cae2b38f6e0",
+      "user_id": "9f66fd55-31a9-4b7c-88b8-40057e33eb1a",
+      "title": "hi",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2026-02-02 14:57:32.557590"
+        },
+        {
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2026-02-02 14:57:32.585249"
+        },
+        {
+          "role": "assistant",
+          "content": "Hello! How can I assist you today? Let me know if you have any questions or need information related to cybersecurity, IT infrastructure, or any other topic.",
+          "timestamp": "2026-02-02 14:57:35.923145"
+        },
+        {
+          "role": "user",
+          "content": "bye",
+          "timestamp": "2026-02-02 14:57:40.174868"
+        },
+        {
+          "role": "assistant",
+          "content": "Goodbye! If you have any more questions in the future, feel free to reach out. Have a great day!",
+          "timestamp": "2026-02-02 14:57:41.644868"
+        }
+      ],
+      "created_at": "2026-02-02 14:57:32.557569",
+      "updated_at": "2026-02-02T14:57:41.644911"
+    },
+    {
+      "id": "1c3c1c38-9165-4290-9867-7c4d24b978ed",
+      "user_id": "9f66fd55-31a9-4b7c-88b8-40057e33eb1a",
+      "title": "fuck u",
+      "messages": [
+        {
+          "role": "user",
+          "content": "fuck u",
+          "timestamp": "2026-02-02 14:57:52.104976"
+        },
+        {
+          "role": "user",
+          "content": "fuck u",
+          "timestamp": "2026-02-02 14:57:52.131640"
+        },
+        {
+          "role": "assistant",
+          "content": "I'm sorry to hear that you're upset. Please let me know if there's anything I can do to help or support you in any way.",
+          "timestamp": "2026-02-02 14:57:54.072172"
+        },
+        {
+          "role": "user",
+          "content": "nuh uh",
+          "timestamp": "2026-02-02 14:57:59.026158"
+        },
+        {
+          "role": "assistant",
+          "content": "I understand, but it would be helpful for me to try and understand the root cause of your concern so I can provide a more accurate response. Could you please share some more context about what's causing you to feel upset?",
+          "timestamp": "2026-02-02 14:58:00.922395"
+        }
+      ],
+      "created_at": "2026-02-02 14:57:52.104953",
+      "updated_at": "2026-02-02T14:58:00.922430"
     }
   ]
 }

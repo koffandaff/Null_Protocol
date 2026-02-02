@@ -51,6 +51,13 @@ class SignupView {
                                 <input type="password" id="confirm-password" required placeholder="••••••••" style="background: rgba(0,0,0,0.3);">
                             </div>
                             
+                            <div style="margin-bottom: 2rem; display: flex; gap: 0.5rem; align-items: start;">
+                                <input type="checkbox" id="privacy-check" style="margin-top: 5px;">
+                                <label for="privacy-check" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+                                    I agree to the <a href="#/privacy" target="_blank" style="color: var(--primary);">Privacy Policy</a> and acknowledge that this tool is for educational purposes only.
+                                </label>
+                            </div>
+                            
                             <button type="submit" class="btn" style="width: 100%; padding: 1rem; font-weight: bold; letter-spacing: 2px;">INITIALIZE IDENTITY</button>
                         </form>
 
@@ -111,11 +118,26 @@ class SignupView {
         const form = document.getElementById('signup-form');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const privacyCheck = document.getElementById('privacy-check');
+
+            if (!privacyCheck.checked) {
+                Utils.showToast('Please agree to the Privacy Policy', 'warning');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                Utils.showToast('Passwords do not match', 'warning');
+                return;
+            }
+
             const userData = {
                 username: document.getElementById('username').value,
                 email: document.getElementById('email').value,
                 full_name: document.getElementById('full_name').value,
-                password: document.getElementById('password').value
+                password: password
             };
 
             try {

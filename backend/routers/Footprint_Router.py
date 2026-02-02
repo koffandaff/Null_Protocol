@@ -1,35 +1,26 @@
 """
-Footprint Router - API endpoints for Digital Footprint Scanner
-Protected routes for OSINT-based digital footprint analysis
+Footprint Router - SQLite Version
+
+API endpoints for Digital Footprint Scanner.
+Protected routes for OSINT-based digital footprint analysis.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 from typing import List
 
 from model.Footprint_Model import (
     FootprintScanRequest, FootprintScanResult, FootprintScanSummary
 )
-from service.Footprint_Service import footprint_service
-from service.Auth_Service import AuthService
-from model.Auth_Model import db as auth_db
-
+from service.Footprint_Service import FootprintService
+from database.engine import get_db
+from routers.dependencies import get_current_user
 
 router = APIRouter()
-security = HTTPBearer()
-auth_service = AuthService(auth_db)
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Dependency to get current authenticated user"""
-    token = credentials.credentials
-    user = auth_service.get_current_user(token)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+def get_footprint_service(db: Session = Depends(get_db)) -> FootprintService:
+    """Get FootprintService with database session"""
+    return FootprintService(db)
 
 
 # ========================
@@ -39,7 +30,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 @router.post("/scan", response_model=FootprintScanResult)
 async def start_scan(
     request: FootprintScanRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    footprint_service: FootprintService = Depends(get_footprint_service)
 ):
     """
     Start a new digital footprint scan.
@@ -63,7 +55,8 @@ async def start_scan(
 @router.get("/scan/{scan_id}")
 async def get_scan(
     scan_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    footprint_service: FootprintService = Depends(get_footprint_service)
 ):
     """Get scan status and results"""
     scan = footprint_service.get_scan(scan_id, current_user["id"])
@@ -87,7 +80,10 @@ async def get_scan(
 
 
 @router.get("/history", response_model=List[FootprintScanSummary])
-async def get_scan_history(current_user: dict = Depends(get_current_user)):
+async def get_scan_history(
+    current_user: dict = Depends(get_current_user),
+    footprint_service: FootprintService = Depends(get_footprint_service)
+):
     """Get all past scans for the current user"""
     return footprint_service.get_user_scans(current_user["id"])
 
@@ -95,7 +91,8 @@ async def get_scan_history(current_user: dict = Depends(get_current_user)):
 @router.delete("/scan/{scan_id}")
 async def delete_scan(
     scan_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    footprint_service: FootprintService = Depends(get_footprint_service)
 ):
     """Delete a scan from history"""
     deleted = footprint_service.delete_scan(scan_id, current_user["id"])

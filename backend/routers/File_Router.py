@@ -3,7 +3,7 @@ File analysis router for hash checking, malware detection, etc.
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
 from fastapi.security import HTTPBearer
-from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from model.File_Model import (
@@ -12,19 +12,26 @@ from model.File_Model import (
     VirusTotalCheckRequest, VirusTotalReport,
     MalwareDatabaseInfo
 )
-from service.File_Service import file_service
+# from service.File_Service import file_service  # Removed global instance
 from routers.dependencies import get_current_user, require_admin
 from utils.rate_limiter import rate_limiter
+from database.engine import get_db
 
 router = APIRouter()
 security = HTTPBearer()
+
+def get_file_service(db: Session = Depends(get_db)):
+    """Get FileService with database session"""
+    from service.File_Service import FileService
+    return FileService(db)
 
 # ========== HASH CHECKING ==========
 
 @router.post("/hash/check", response_model=HashCheckResult)
 async def check_hash(
     request: HashCheckRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    file_service = Depends(get_file_service)
 ):
     """Check hash against malware databases"""
     try:
@@ -48,7 +55,8 @@ async def check_hash(
 @router.post("/hash/batch", response_model=BatchHashCheckResult)
 async def check_hash_batch(
     request: BatchHashCheckRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    file_service = Depends(get_file_service)
 ):
     """Check multiple hashes in batch"""
     try:
@@ -77,7 +85,8 @@ async def analyze_file_upload(
     description: Optional[str] = Query(None, description="Optional description"),
     password_protected: bool = Query(False, description="Is the file password protected?"),
     use_virustotal: bool = Query(True, description="Cross-reference hash with VirusTotal"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    file_service = Depends(get_file_service)
 ):
     """Analyze uploaded file"""
     try:
@@ -107,7 +116,8 @@ async def analyze_file_upload(
 @router.post("/virustotal/check", response_model=VirusTotalReport)
 async def check_virustotal(
     request: VirusTotalCheckRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    file_service = Depends(get_file_service)
 ):
     """Check hash on VirusTotal (requires API key)"""
     try:
@@ -141,7 +151,8 @@ async def check_virustotal(
 
 @router.get("/malware/database", response_model=MalwareDatabaseInfo)
 async def get_malware_database_info(
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(require_admin),
+    file_service = Depends(get_file_service)
 ):
     """Get information about local malware database (admin only)"""
     try:
@@ -154,7 +165,8 @@ async def get_malware_database_info(
 @router.post("/malware/database/update")
 async def update_malware_database(
     hashes: List[dict],
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(require_admin),
+    file_service = Depends(get_file_service)
 ):
     """Update local malware database with new hashes (admin only)"""
     try:

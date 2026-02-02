@@ -2,10 +2,13 @@ from datetime import datetime
 import uuid
 import os
 from typing import List, Optional, Dict
+from sqlalchemy.orm import Session
+
 from model.VPN_Model import VPNConfigRequest, WireGuardRequest, VPNConfigResponse, VPNKeys
 from utils.vpn_tools import vpn_tools
 from utils.pki_manager import pki_manager
-from model.Auth_Model import db  # Using the shared TempDb instance
+from database.repositories.vpn_repository import VPNRepository
+from database.repositories.activity_repository import ActivityRepository 
 
 
 class VPNService:
@@ -16,10 +19,10 @@ class VPNService:
     Requires a real OpenVPN server to connect to.
     """
     
-    def __init__(self):
-        # In a real app, we would store these in a database
-        if not hasattr(db, 'vpn_configs'):
-            db.vpn_configs = {} 
+    def __init__(self, db: Session):
+        self.db = db
+        self.vpn_repo = VPNRepository(db)
+        self.activity_repo = ActivityRepository(db)
 
         # VPN Server configuration from environment
         self.vpn_server_ip = os.getenv("VPN_SERVER_IP", "your.server.ip.here")
@@ -118,10 +121,10 @@ class VPNService:
         )
         
         # Store in DB
-        db.vpn_configs[config_id] = config.model_dump()
+        self.vpn_repo.create(config.model_dump())
         
         # Log VPN activity
-        db.log_activity(
+        self.activity_repo.log_activity(
             user_id=user_id,
             action='vpn_generate',
             details={'server': server_name, 'type': 'openvpn'}
@@ -243,7 +246,7 @@ mute 20
         )
         
         # Store in DB
-        db.vpn_configs[config_id] = config.model_dump()
+        self.vpn_repo.create(config.model_dump())
         
         return config
 
@@ -251,11 +254,8 @@ mute 20
         """
         Get all VPN configs for a user.
         """
-        user_configs = []
-        for config_data in db.vpn_configs.values():
-            if config_data['user_id'] == user_id:
-                user_configs.append(VPNConfigResponse(**config_data))
-        return user_configs
+        configs = self.vpn_repo.get_by_user(user_id)
+        return [VPNConfigResponse(**c.to_dict()) if hasattr(c, 'to_dict') else VPNConfigResponse(**c.__dict__) for c in configs]
     
     def get_server_setup_files(self) -> Dict:
         """
@@ -265,4 +265,3 @@ mute 20
         return pki_manager.get_server_files()
 
 
-vpn_service = VPNService()

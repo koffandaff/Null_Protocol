@@ -67,6 +67,10 @@ class Utils {
             .replace(/\n/g, '<br>');
     }
 
+    static generateId(length = 8) {
+        return Math.random().toString(36).substring(2, 2 + length);
+    }
+
     static async visualizeProgress(id, duration, steps) {
         const bar = document.getElementById(`${id}-bar`);
         const text = document.getElementById(`${id}-text`);

@@ -1,40 +1,41 @@
+"""
+User Router - SQLite Version
+
+Endpoints for user profile, password, and activity management.
+"""
 from fastapi import APIRouter, HTTPException, Depends, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from model.Auth_Model import db
+from sqlalchemy.orm import Session
+
 from model.User_Model import (
     UserProfileUpdate, PasswordChange, 
     ActivityResponse, StatsResponse, DeleteAccountRequest,
-    UserResponse  # ADD THIS IMPORT
+    UserResponse
 )
 from service.Auth_Service import AuthService
 from service.User_Service import UserService
+from database.engine import get_db
+from routers.dependencies import get_current_user
 
 router = APIRouter()
-security = HTTPBearer()
 
-auth_service = AuthService(db)
-user_service = UserService(db, auth_service)
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    user = auth_service.get_current_user(token)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+def get_user_service(db: Session = Depends(get_db)) -> UserService:
+    """Get UserService with database session"""
+    return UserService(db)
+
 
 # ========== PROFILE MANAGEMENT ==========
 
-@router.get("/profile", response_model=UserResponse)  # ADD THIS ENDPOINT
+@router.get("/profile", response_model=UserResponse)
 async def get_profile(
     current_user: dict = Depends(get_current_user),
-    request: Request = None
+    request: Request = None,
+    db: Session = Depends(get_db)
 ):
     """Get current user profile"""
     try:
+        user_service = UserService(db)
+        
         # Log activity
         user_service.log_activity(
             user_id=current_user['id'],
@@ -43,22 +44,19 @@ async def get_profile(
             request=request
         )
         
-        # Get user from database
-        user = db.get_userby_id(current_user['id'])
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Return user profile
-        return UserResponse(**user)
+        # Return user data from dependency
+        return UserResponse(**current_user)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.put("/profile", response_model=UserResponse)
 async def update_profile(
     profile_data: UserProfileUpdate,
     current_user: dict = Depends(get_current_user),
-    request: Request = None
+    request: Request = None,
+    user_service: UserService = Depends(get_user_service)
 ):
     """Update user profile"""
     try:
@@ -78,24 +76,19 @@ async def update_profile(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== PASSWORD MANAGEMENT ==========
 
 @router.put("/password")
 async def change_password(
     password_data: PasswordChange,
     current_user: dict = Depends(get_current_user),
-    request: Request = None
+    request: Request = None,
+    user_service: UserService = Depends(get_user_service)
 ):
     """Change user password"""
     try:
-        # Log activity
-        user_service.log_activity(
-            user_id=current_user['id'],
-            action="password_change",
-            request=request
-        )
-        
-        # Change password
+        # Change password (also logs activity internally)
         user_service.change_password(
             current_user['id'],
             password_data.current_password,
@@ -107,13 +100,15 @@ async def change_password(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== ACCOUNT MANAGEMENT ==========
 
 @router.delete("/account")
 async def delete_account(
     delete_request: DeleteAccountRequest,
     current_user: dict = Depends(get_current_user),
-    request: Request = None
+    request: Request = None,
+    user_service: UserService = Depends(get_user_service)
 ):
     """Delete user account"""
     try:
@@ -132,6 +127,7 @@ async def delete_account(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== ACTIVITY & STATISTICS ==========
 
 @router.get("/activities", response_model=ActivityResponse)
@@ -139,7 +135,8 @@ async def get_activities(
     limit: int = 20,
     page: int = 1,
     current_user: dict = Depends(get_current_user),
-    request: Request = None
+    request: Request = None,
+    user_service: UserService = Depends(get_user_service)
 ):
     """Get user activity logs"""
     try:
@@ -157,10 +154,12 @@ async def get_activities(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats(
     current_user: dict = Depends(get_current_user),
-    request: Request = None
+    request: Request = None,
+    user_service: UserService = Depends(get_user_service)
 ):
     """Get user statistics"""
     try:

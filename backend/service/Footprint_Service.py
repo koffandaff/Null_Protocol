@@ -7,16 +7,21 @@ import subprocess
 import json
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from sqlalchemy.orm import Session
 
 from model.Footprint_Model import (
     FootprintDatabase, FootprintScanRequest, FootprintScanResult,
     FindingItem, SeverityLevel, FindingCategory, footprint_db
 )
+from database.repositories.activity_repository import ActivityRepository
 
 
 class FootprintService:
-    def __init__(self, db: FootprintDatabase):
-        self.db = db
+    def __init__(self, sql_db: Session, footprint_db: FootprintDatabase = footprint_db):
+        self.db = footprint_db  # In-memory footprint scan storage
+        self.sql_db = sql_db  # SQLAlchemy session for logging
+        self.activity_repo = ActivityRepository(sql_db)
+
         # Sites to check with holehe (subset of most important ones)
         self.email_sites = [
             "twitter", "instagram", "facebook", "github", "linkedin",
@@ -81,12 +86,12 @@ class FootprintService:
             })
             
             # Log footprint activity
-            from model.Auth_Model import db as auth_db
-            auth_db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action='footprint',
                 details={'email': request.email, 'username': request.username, 'findings_count': len(findings)}
             )
+
             
         except Exception as e:
             self.db.update_scan(scan_id, user_id, {
@@ -384,7 +389,3 @@ class FootprintService:
     def delete_scan(self, scan_id: str, user_id: str) -> bool:
         """Delete a scan"""
         return self.db.delete_scan(scan_id, user_id)
-
-
-# Global service instance
-footprint_service = FootprintService(footprint_db)
