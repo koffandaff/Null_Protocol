@@ -3,8 +3,8 @@ Security scanning router for SSL, headers, phishing, etc.
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.security import HTTPBearer
+from sqlalchemy.orm import Session
 from typing import Optional, List
-from datetime import datetime, timezone
 
 from model.Security_Model import (
     SSLScanRequest, HeaderScanRequest, PhishingCheckRequest,
@@ -12,19 +12,27 @@ from model.Security_Model import (
     SSLScanResult, HeaderScanResult, PhishingCheckResult,
     TechStackResult, HTTPSecurityResult
 )
-from service.Security_Service import security_service
+from service.Security_Service import SecurityService
 from routers.dependencies import get_current_user, require_admin
 from utils.rate_limiter import rate_limiter
+from database.engine import get_db
 
 router = APIRouter()
 security = HTTPBearer()
+
+
+def get_security_service(db: Session = Depends(get_db)) -> SecurityService:
+    """Get SecurityService with database session"""
+    return SecurityService(db)
+
 
 # ========== SSL/TLS SCANNING ==========
 
 @router.post("/ssl", response_model=SSLScanResult)
 async def scan_ssl(
     request: SSLScanRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Perform SSL/TLS certificate scan"""
     try:
@@ -46,10 +54,12 @@ async def scan_ssl(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/headers", response_model=HeaderScanResult)
 async def scan_headers(
     request: HeaderScanRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Analyze HTTP headers and detect technologies"""
     try:
@@ -70,10 +80,12 @@ async def scan_headers(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/phishing/check", response_model=PhishingCheckResult)
 async def check_phishing(
     request: PhishingCheckRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Check URL for phishing indicators"""
     try:
@@ -94,10 +106,12 @@ async def check_phishing(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/tech-stack", response_model=TechStackResult)
 async def scan_tech_stack(
     request: TechStackRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Detect technology stack for a domain"""
     try:
@@ -118,10 +132,12 @@ async def scan_tech_stack(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/http-security", response_model=HTTPSecurityResult)
 async def scan_http_security(
     request: HTTPSecurityRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Perform comprehensive HTTP security analysis"""
     try:
@@ -142,11 +158,13 @@ async def scan_http_security(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== CACHE MANAGEMENT (Admin Only) ==========
 
 @router.get("/cache/stats")
 async def get_cache_stats(
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(require_admin),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Get cache statistics (admin only)"""
     try:
@@ -156,10 +174,12 @@ async def get_cache_stats(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/cache/clear")
 async def clear_cache(
     cache_type: Optional[str] = Query(None, description="Type of cache to clear (e.g., 'ssl', 'headers'). Leave empty to clear all."),
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(require_admin),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Clear cache (admin only)"""
     try:
@@ -170,10 +190,12 @@ async def clear_cache(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/cache/entries")
 async def get_cache_entries(
     limit: int = Query(50, ge=1, le=200),
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(require_admin),
+    security_service: SecurityService = Depends(get_security_service)
 ):
     """Get cache entries for inspection (admin only)"""
     try:
@@ -183,6 +205,7 @@ async def get_cache_entries(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== HEALTH & PERFORMANCE ==========
 
 @router.get("/health/detailed")
@@ -191,6 +214,7 @@ async def detailed_health_check():
     from config.settings import settings
     import sys
     import platform
+    from datetime import datetime, timezone
     
     health_info = {
         'app': {
@@ -213,6 +237,7 @@ async def detailed_health_check():
     }
     
     return health_info
+
 
 @router.get("/rate-limits")
 async def get_rate_limits(

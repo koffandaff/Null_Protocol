@@ -1,8 +1,10 @@
 """
-Scan Router with Rate Limiting and Security
+Scan Router - SQLite Version
+
+Network scanning endpoints with rate limiting and security.
 """
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from model.Scan_Model import (
@@ -10,13 +12,19 @@ from model.Scan_Model import (
     DNSRequest, SubdomainRequest, PortScanRequest,
     ScanResult, ScanHistoryResponse
 )
-from service.Scan_Service import scan_service
+# from service.Scan_Service import ScanService  # Moved inside function
 from routers.dependencies import get_current_user, require_admin
 from utils.rate_limiter import rate_limiter
-from model.Auth_Model import db  # ADD THIS IMPORT
+from database.engine import get_db
 
 router = APIRouter()
-security = HTTPBearer()
+
+
+def get_scan_service(db: Session = Depends(get_db)):
+    """Get ScanService with database session"""
+    from service.Scan_Service import ScanService
+    return ScanService(db)
+
 
 # ========== DOMAIN SCANNING ==========
 
@@ -24,6 +32,7 @@ security = HTTPBearer()
 async def scan_domain(
     request: DomainScanRequest,
     current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service),
     http_request: Request = None
 ):
     """Perform comprehensive domain scan"""
@@ -59,10 +68,12 @@ async def scan_domain(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/whois", response_model=ScanResult)
 async def scan_whois(
     request: WhoisRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Perform WHOIS lookup"""
     try:
@@ -91,10 +102,12 @@ async def scan_whois(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/dns", response_model=ScanResult)
 async def scan_dns(
     request: DNSRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Get DNS records"""
     try:
@@ -123,10 +136,12 @@ async def scan_dns(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/subdomains", response_model=ScanResult)
 async def scan_subdomains(
     request: SubdomainRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Discover subdomains"""
     try:
@@ -155,12 +170,14 @@ async def scan_subdomains(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== IP SCANNING ==========
 
 @router.post("/ip", response_model=ScanResult)
 async def scan_ip(
     request: IPScanRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Get IP information"""
     try:
@@ -189,10 +206,12 @@ async def scan_ip(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/ports", response_model=ScanResult)
 async def scan_ports(
     request: PortScanRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Scan ports on target"""
     try:
@@ -221,12 +240,14 @@ async def scan_ports(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== SCAN MANAGEMENT ==========
 
 @router.get("/{scan_id}", response_model=ScanResult)
 async def get_scan_result(
     scan_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Get scan result by ID"""
     try:
@@ -240,11 +261,13 @@ async def get_scan_result(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/user/history", response_model=ScanHistoryResponse)
 async def get_scan_history(
     limit: int = Query(20, ge=1, le=100),
     page: int = Query(1, ge=1),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Get user's scan history"""
     try:
@@ -254,10 +277,12 @@ async def get_scan_history(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.delete("/{scan_id}")
 async def delete_scan(
     scan_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    scan_service = Depends(get_scan_service)
 ):
     """Delete a scan"""
     try:
@@ -274,23 +299,24 @@ async def delete_scan(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # ========== ADMIN ENDPOINTS ==========
 
 @router.get("/admin/all")
 async def get_all_scans(
     limit: int = Query(50, ge=1, le=200),
     page: int = Query(1, ge=1),
-    admin: dict = Depends(require_admin)
+    admin: dict = Depends(require_admin),
+    scan_service = Depends(get_scan_service)
 ):
     """Get all scans (admin only)"""
     try:
         skip = (page - 1) * limit
-        scans = db.get_all_scans(limit, skip)
-        total = len(db.scans)
+        scans = scan_service.scan_repo.get_all(limit, skip)
         
         return {
-            "scans": scans,
-            "total": total,
+            "scans": [scan_service._scan_to_dict(s) for s in scans],
+            "total": len(scans),
             "page": page,
             "limit": limit
         }
@@ -298,15 +324,17 @@ async def get_all_scans(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.delete("/admin/{scan_id}")
 async def admin_delete_scan(
     scan_id: str,
-    admin: dict = Depends(require_admin)
+    admin: dict = Depends(require_admin),
+    scan_service = Depends(get_scan_service)
 ):
     """Delete any scan (admin only)"""
     try:
-        if scan_id in db.scans:
-            del db.scans[scan_id]
+        success = scan_service.scan_repo.delete(scan_id)
+        if success:
             return {"message": "Scan deleted successfully"}
         else:
             raise HTTPException(status_code=404, detail="Scan not found")

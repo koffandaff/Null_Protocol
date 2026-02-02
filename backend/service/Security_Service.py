@@ -4,6 +4,7 @@ Security scanning service for SSL, headers, phishing, etc.
 from typing import Dict, Optional, List
 from datetime import datetime
 import time
+from sqlalchemy.orm import Session
 
 from model.Security_Model import (
     SSLScanRequest, HeaderScanRequest, PhishingCheckRequest,
@@ -16,11 +17,14 @@ from utils.security_tools import security_tools
 from utils.phishing_tools import phishing_tools
 from utils.cache_tools import cache_tools
 from utils.rate_limiter import rate_limiter
-from model.Auth_Model import db
+from database.repositories.user_repository import UserRepository
+from database.repositories.activity_repository import ActivityRepository
 
 class SecurityService:
-    def __init__(self):
+    def __init__(self, db: Session):
         self.db = db
+        self.user_repo = UserRepository(db)
+        self.activity_repo = ActivityRepository(db)
     
     # ========== SSL/TLS SCANNING ==========
     
@@ -65,7 +69,7 @@ class SecurityService:
             cache_tools.set(cache_key, scan_results)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="ssl_scan",
                 details={
@@ -76,7 +80,7 @@ class SecurityService:
             )
             
             # Update stats
-            self.db.update_user_stats(user_id, {'security_scans': 1})
+            self._update_stat(user_id, {'security_scans': 1})
             
             return scan_results
             
@@ -125,7 +129,7 @@ class SecurityService:
             cache_tools.set(cache_key, scan_results)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="header_scan",
                 details={
@@ -136,7 +140,7 @@ class SecurityService:
             )
             
             # Update stats
-            self.db.update_user_stats(user_id, {'security_scans': 1})
+            self._update_stat(user_id, {'security_scans': 1})
             
             return scan_results
             
@@ -185,7 +189,7 @@ class SecurityService:
             cache_tools.set(cache_key, scan_results)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="phishing_check",
                 details={
@@ -197,8 +201,8 @@ class SecurityService:
             
             # Update stats
             if scan_results.get('is_phishing', False):
-                self.db.update_user_stats(user_id, {'phishing_detected': 1})
-            self.db.update_user_stats(user_id, {'phishing_checks': 1})
+                self._update_stat(user_id, {'phishing_detected': 1})
+            self._update_stat(user_id, {'phishing_checks': 1})
             
             return scan_results
             
@@ -247,7 +251,7 @@ class SecurityService:
             cache_tools.set(cache_key, scan_results)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="tech_stack_detection",
                 details={
@@ -257,7 +261,7 @@ class SecurityService:
             )
             
             # Update stats
-            self.db.update_user_stats(user_id, {'tech_scans': 1})
+            self._update_stat(user_id, {'tech_scans': 1})
             
             return scan_results
             
@@ -306,7 +310,7 @@ class SecurityService:
             cache_tools.set(cache_key, scan_results)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="http_security_analysis",
                 details={
@@ -316,7 +320,7 @@ class SecurityService:
             )
             
             # Update stats
-            self.db.update_user_stats(user_id, {'security_scans': 1})
+            self._update_stat(user_id, {'security_scans': 1})
             
             return scan_results
             
@@ -328,8 +332,8 @@ class SecurityService:
     def get_cache_stats(self, user_id: str) -> Dict:
         """Get cache statistics"""
         # Only admin can view cache stats
-        user = self.db.get_userby_id(user_id)
-        if not user or user.get('role') != 'admin':
+        user = self.user_repo.get_by_id(user_id)
+        if not user or user.role != 'admin':
             raise ValueError("Admin access required")
         
         return cache_tools.get_stats()
@@ -337,14 +341,14 @@ class SecurityService:
     def clear_cache(self, user_id: str, cache_type: str = None) -> Dict:
         """Clear cache"""
         # Only admin can clear cache
-        user = self.db.get_userby_id(user_id)
-        if not user or user.get('role') != 'admin':
+        user = self.user_repo.get_by_id(user_id)
+        if not user or user.role != 'admin':
             raise ValueError("Admin access required")
         
         result = cache_tools.clear(cache_type)
         
         # Log activity
-        self.db.log_activity(
+        self.activity_repo.log_activity(
             user_id=user_id,
             action="cache_clear",
             details={
@@ -358,11 +362,16 @@ class SecurityService:
     def get_cache_entries(self, user_id: str, limit: int = 50) -> List[Dict]:
         """Get cache entries for inspection"""
         # Only admin can view cache entries
-        user = self.db.get_userby_id(user_id)
-        if not user or user.get('role') != 'admin':
+        user = self.user_repo.get_by_id(user_id)
+        if not user or user.role != 'admin':
             raise ValueError("Admin access required")
         
         return cache_tools.get_entries(limit)
-
-# Global instance
-security_service = SecurityService()
+    
+    def _update_stat(self, user_id: str, stat_updates: dict):
+        """Update user statistics via repository"""
+        stats = self.user_repo.get_stats(user_id)
+        if stats:
+            for key, increment in stat_updates.items():
+                current_value = getattr(stats, key, 0) or 0
+                self.user_repo.update_stats(user_id, {key: current_value + increment})

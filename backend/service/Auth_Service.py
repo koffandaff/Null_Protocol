@@ -1,15 +1,35 @@
+"""
+Authentication Service - SQLite Version
+
+Handles user authentication, JWT tokens, and session management.
+Uses SQLAlchemy repositories instead of TempDb.
+"""
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 from jose import jwt, JWTError
+from sqlalchemy.orm import Session
 import bcrypt
 import os
 from dotenv import load_dotenv
 
+from database.repositories.user_repository import UserRepository
+from database.repositories.activity_repository import ActivityRepository
+
 load_dotenv()
 
+
 class AuthService:
-    def __init__(self, db):
+    """
+    Authentication service using SQLite database.
+    
+    Requires a SQLAlchemy Session to be passed in.
+    """
+    
+    def __init__(self, db: Session):
         self.db = db
+        self.user_repo = UserRepository(db)
+        self.activity_repo = ActivityRepository(db)
+        
         # Load environment variables
         self.secret_key = os.getenv('SECRET_KEY', 'fsocitey-backup-key-change-this')
         self.algorithm = os.getenv('ALGORITHM', 'HS256')
@@ -69,62 +89,68 @@ class AuthService:
             return None
         
     def register_user(self, user_data: dict) -> dict:
-        """Register new user with additional fields"""
-        existing_user = self.db.get_userby_email(user_data['email'])
+        """Register new user"""
+        # Check if user already exists
+        existing_user = self.user_repo.get_by_email(user_data['email'])
         if existing_user:
             raise ValueError("User already exists")
         
+        # Check username uniqueness
+        existing_username = self.user_repo.get_by_username(user_data['username'])
+        if existing_username:
+            raise ValueError("Username already taken")
+        
+        # Hash password
         hashed_pass = self.hash_password(user_data['password'])
 
-        user_save = {
+        # Create user via repository
+        user = self.user_repo.create({
             'email': user_data['email'],
             'username': user_data['username'],
-            'hashed_password': hashed_pass,
-            'full_name': user_data.get('full_name'),
-            'phone': user_data.get('phone'),
-            'company': user_data.get('company'),
-            'bio': user_data.get('bio'),
-            'role': user_data.get('role', 'user'),  # Add role, default to 'user'
-            'is_active': True,
-            'created_at': datetime.utcnow().isoformat()
-        }
-
-        user_id = self.db.save_user(user_save)
-        
-        # Log signup activity
-        self.db.log_activity(
-            user_id=user_id,
-            action='signup',
-            details={'email': user_data['email'], 'username': user_data['username']}
-        )
-
-        return {
-            'id': user_id,
-            'email': user_data['email'],
-            'username': user_data['username'],
+            'password_hash': hashed_pass,
             'full_name': user_data.get('full_name'),
             'phone': user_data.get('phone'),
             'company': user_data.get('company'),
             'bio': user_data.get('bio'),
             'role': user_data.get('role', 'user'),
-            'created_at': user_save['created_at']
+            'is_active': True,
+        })
+        
+        # Log signup activity
+        self.activity_repo.log_activity(
+            user_id=user.id,
+            action='signup',
+            details={'email': user_data['email'], 'username': user_data['username']}
+        )
+
+        return {
+            'id': user.id,
+            'email': user.email,
+            'username': user.username,
+            'full_name': user.full_name,
+            'phone': user.phone,
+            'company': user.company,
+            'bio': user.bio,
+            'role': user.role,
+            'created_at': user.created_at.isoformat() if user.created_at else None
         }
     
     def authenticate_user(self, email: str, password: str) -> Optional[dict]:
         """Authenticate user"""
-        user = self.db.get_userby_email(email)
+        user = self.user_repo.get_by_email(email)
         
         if not user:
             return None
         
-        if not self.verify_password(password, user['hashed_password']):
+        if not self.verify_password(password, user.password_hash):
             return None
         
-        # Check if user is disabled - raise specific error
-        if not user.get('is_active', True):
+        # Check if user is disabled
+        if not user.is_active:
             raise PermissionError("ACCOUNT_DISABLED")
         
-        return user
+        # Convert ORM model to dict
+        return self._user_to_dict(user)
     
     def login_user(self, email: str, password: str) -> dict:
         """Login user and return tokens"""
@@ -138,20 +164,25 @@ class AuthService:
         if not user:
             raise ValueError("Invalid credentials")
         
-        # Include role in token payload
+        # Create token payload
         token_payload = {
             'sub': user['id'], 
             'email': user['email'],
-            'role': user.get('role', 'user')  # Include role in JWT
+            'role': user.get('role', 'user')
         }
         
         access_token = self.create_access_token(token_payload)
         refresh_token = self.create_refresh_token(token_payload)
 
-        self.db.save_refresh_token(user['id'], refresh_token)
+        # Save refresh token to database
+        expires_at = datetime.utcnow() + timedelta(days=self.refresh_token_expire)
+        self.user_repo.save_refresh_token(user['id'], refresh_token, expires_at)
+        
+        # Update last login
+        self.user_repo.update_last_login(user['id'])
         
         # Log login activity
-        self.db.log_activity(
+        self.activity_repo.log_activity(
             user_id=user['id'],
             action='login',
             details={'email': user['email'], 'username': user.get('username')}
@@ -183,29 +214,36 @@ class AuthService:
         if not user_id:
             return None
         
-        stored_token = self.db.get_refresh_token(user_id)
+        # Verify stored token matches
+        stored_token = self.user_repo.get_refresh_token(user_id)
         if stored_token != refresh_token:
             return None
         
-        user = self.db.get_userby_id(user_id)
+        user = self.user_repo.get_by_id(user_id)
         if not user:
             return None
         
-        # Include role when refreshing token
+        # Create new access token
         payload_access_token = {
-            'sub': user['id'], 
-            'email': user['email'],
-            'role': user.get('role', 'user')
+            'sub': user.id, 
+            'email': user.email,
+            'role': user.role or 'user'
         }
         new_access_token = self.create_access_token(payload_access_token)
         return new_access_token
     
     def logout(self, user_id: str, refresh_token: str):
         """Logout user by deleting refresh token"""
-        # Verify the refresh token before deleting
         payload = self.verify_token(refresh_token, 'refresh')
         if payload and payload.get('sub') == user_id:
-            self.db.delete_refresh_token(user_id)
+            self.user_repo.delete_refresh_token(user_id)
+            
+            # Log logout activity
+            self.activity_repo.log_activity(
+                user_id=user_id,
+                action='logout',
+                details={}
+            )
 
     def get_current_user(self, token: str) -> Optional[dict]:
         """Get current user from token"""
@@ -217,5 +255,128 @@ class AuthService:
         if not user_id:
             return None
         
-        user = self.db.get_userby_id(user_id)
-        return user
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            return None
+            
+        return self._user_to_dict(user)
+    
+    def _user_to_dict(self, user) -> dict:
+        """Convert User ORM model to dictionary"""
+        return {
+            'id': user.id,
+            'email': user.email,
+            'username': user.username,
+            'full_name': user.full_name,
+            'phone': user.phone,
+            'company': user.company,
+            'bio': user.bio,
+            'role': user.role or 'user',
+            'is_active': user.is_active,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+            'updated_at': user.updated_at.isoformat() if user.updated_at else None,
+            'password_changed_at': user.password_changed_at.isoformat() if user.password_changed_at else None,
+            # Keep hashed_password for internal use (password verification)
+            'hashed_password': user.password_hash,
+        }
+
+    # ==================== PASSWORD MANAGEMENT ====================
+
+    def request_password_reset(self, email: str) -> bool:
+        """Generate 6-digit OTP and print to console (Mock Email)"""
+        user = self.user_repo.get_by_email(email)
+        if not user:
+            # Return True to prevent user enumeration
+            return True
+        
+        import secrets
+        import hashlib
+        
+        # Generate 6-digit OTP
+        otp = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+        
+        # Store SHA256 hash for lookup/verification
+        token_hash = hashlib.sha256(otp.encode()).hexdigest()
+        
+        # OTP expires in 10 minutes
+        expires_at = datetime.utcnow() + timedelta(minutes=10)
+        
+        self.user_repo.create_reset_token(user.id, token_hash, expires_at)
+        
+        # MOCK EMAIL SENDER
+        print("\n" + "="*50)
+        print(f" [EMAIL SERVICE] OTP Requested for {email}")
+        print(f" [OTP CODE] {otp}")
+        print("="*50 + "\n")
+        
+        return True
+
+    def verify_otp_only(self, email: str, otp: str) -> None:
+        """Verify OTP without resetting password (Internal check)"""
+        import hashlib
+        
+        user = self.user_repo.get_by_email(email)
+        if not user:
+            raise ValueError("Invalid Email or OTP")
+            
+        token_data = self.user_repo.get_user_reset_token(user.id)
+        if not token_data:
+            raise ValueError("No reset requested or expired")
+            
+        input_hash = hashlib.sha256(otp.encode()).hexdigest()
+        if input_hash != token_data['token_hash']:
+            raise ValueError("Invalid OTP")
+            
+        if token_data['expires_at'] < datetime.utcnow():
+            raise ValueError("OTP has expired")
+
+    def reset_password(self, email: str, otp: str, new_password: str) -> None:
+        """Reset password using Email + OTP"""
+        import hashlib
+        
+        # 1. Verify User
+        user = self.user_repo.get_by_email(email)
+        if not user:
+            # Generic error to prevent enumeration? Or "Invalid OTP"?
+            # If user doesn't exist, they can't have an OTP.
+            raise ValueError("Invalid Email or OTP")
+
+        # 2. Get User's Token
+        token_data = self.user_repo.get_user_reset_token(user.id)
+        if not token_data:
+            raise ValueError("No reset requested or expired")
+            
+        # 3. Verify OTP Hash
+        input_hash = hashlib.sha256(otp.encode()).hexdigest()
+        if input_hash != token_data['token_hash']:
+            raise ValueError("Invalid OTP")
+
+        # 4. Check Expiry
+        if token_data['expires_at'] < datetime.utcnow():
+            self.user_repo.delete_reset_token(token_data['token_hash'])
+            raise ValueError("OTP has expired")
+            
+        # Update password
+        new_hash = self.hash_password(new_password)
+        self.user_repo.update(user.id, {
+            'password_hash': new_hash,
+            'password_changed_at': datetime.utcnow()
+        })
+        
+        # Invalidate token
+        self.user_repo.delete_reset_token(token_data['token_hash'])
+
+    def change_password(self, user_id: str, current_password: str, new_password: str) -> None:
+        """Change password for authenticated user"""
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise ValueError("User not found")
+            
+        if not self.verify_password(current_password, user.password_hash):
+            raise ValueError("Incorrect current password")
+            
+        new_hash = self.hash_password(new_password)
+        self.user_repo.update(user_id, {
+            'password_hash': new_hash,
+            'password_changed_at': datetime.utcnow()
+        })

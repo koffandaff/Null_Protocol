@@ -1,18 +1,32 @@
 """
-Scan Service with Security Features
+Scan Service - SQLite Version
+
+Handles network scanning with security features.
+Uses SQLAlchemy repositories instead of TempDb.
 """
 from typing import Dict, Optional, List
 from datetime import datetime
 import time
+from sqlalchemy.orm import Session
+
 from model.Scan_Model import ScanType, ScanStatus, ScanValidator
 from utils.ssrf_guard import ssrf_guard
 from utils.network_tools import network_tools
 from utils.rate_limiter import rate_limiter
-from model.Auth_Model import db
+
+from database.repositories.scan_repository import ScanRepository
+from database.repositories.user_repository import UserRepository
+from database.repositories.activity_repository import ActivityRepository
+
 
 class ScanService:
-    def __init__(self):
+    """Scan service using SQLite database."""
+    
+    def __init__(self, db: Session):
         self.db = db
+        self.scan_repo = ScanRepository(db)
+        self.user_repo = UserRepository(db)
+        self.activity_repo = ActivityRepository(db)
     
     def validate_and_create_scan(self, user_id: str, scan_type: str, target: str) -> str:
         """Validate scan request and create scan entry"""
@@ -50,14 +64,19 @@ class ScanService:
         # Sanitize target
         sanitized_target = ssrf_guard.sanitize_input(target)
         
-        # Create scan record
-        scan_id = self.db.create_scan(user_id, scan_type, sanitized_target)
+        # Create scan record via repository
+        scan = self.scan_repo.create({
+            "user_id": user_id,
+            "scan_type": scan_type,
+            "target": sanitized_target,
+            "status": "pending"
+        })
         
-        return scan_id
+        return scan.id
     
     def perform_scan(self, scan_id: str) -> Dict:
         """Perform the actual scan (synchronous for now)"""
-        scan = self.db.get_scan(scan_id)
+        scan = self.scan_repo.get_by_id(scan_id)
         if not scan:
             raise ValueError("Scan not found")
         
@@ -65,53 +84,53 @@ class ScanService:
         
         try:
             # Update scan status
-            self.db.update_scan(scan_id, {
+            self.scan_repo.update(scan_id, {
                 'status': 'running',
-                'started_at': datetime.utcnow().isoformat()
+                'started_at': datetime.utcnow()
             })
             
             # Perform scan based on type
             results = {}
-            print(f"[DEBUG] Initiating {scan['scan_type']} scan for target: {scan['target']} (User: {scan['user_id']})")
+            print(f"[DEBUG] Initiating {scan.scan_type} scan for target: {scan.target} (User: {scan.user_id})")
             
-            if scan['scan_type'] == 'domain':
-                results = network_tools.full_domain_scan(scan['target'])
+            if scan.scan_type == 'domain':
+                results = network_tools.full_domain_scan(scan.target)
             
-            elif scan['scan_type'] == 'whois':
-                results = network_tools.get_whois(scan['target'])
+            elif scan.scan_type == 'whois':
+                results = network_tools.get_whois(scan.target)
             
-            elif scan['scan_type'] == 'dns':
-                results = network_tools.get_dns_records(scan['target'])
+            elif scan.scan_type == 'dns':
+                results = network_tools.get_dns_records(scan.target)
             
-            elif scan['scan_type'] == 'subdomains':
-                results = network_tools.find_subdomains(scan['target'])
+            elif scan.scan_type == 'subdomains':
+                results = network_tools.find_subdomains(scan.target)
             
-            elif scan['scan_type'] == 'ip':
-                results = network_tools.get_ip_info(scan['target'])
+            elif scan.scan_type == 'ip':
+                results = network_tools.get_ip_info(scan.target)
             
-            elif scan['scan_type'] == 'ports':
+            elif scan.scan_type == 'ports':
                 # For domain targets, get IP first
-                if ScanValidator.validate_domain(scan['target']):
-                    print(f"[DEBUG] Resolving domain {scan['target']} to IP for port scan...")
-                    dns_results = network_tools.get_dns_records(scan['target'])
+                if ScanValidator.validate_domain(scan.target):
+                    print(f"[DEBUG] Resolving domain {scan.target} to IP for port scan...")
+                    dns_results = network_tools.get_dns_records(scan.target)
                     if dns_results.get('a_records'):
                         target_ip = dns_results['a_records'][0]
                         print(f"[DEBUG] Resolved to {target_ip}. Starting port scan...")
                         results = network_tools.scan_ports(target_ip)
-                        results['domain'] = scan['target']
+                        results['domain'] = scan.target
                     else:
-                        print(f"[ERROR] Could not resolve {scan['target']}")
+                        print(f"[ERROR] Could not resolve {scan.target}")
                         raise ValueError("Could not resolve domain to IP")
                 else:
-                    print(f"[DEBUG] Starting direct IP port scan on {scan['target']}")
-                    results = network_tools.scan_ports(scan['target'])
+                    print(f"[DEBUG] Starting direct IP port scan on {scan.target}")
+                    results = network_tools.scan_ports(scan.target)
             
             else:
-                print(f"[ERROR] Unsupported scan type: {scan['scan_type']}")
-                raise ValueError(f"Unsupported scan type: {scan['scan_type']}")
+                print(f"[ERROR] Unsupported scan type: {scan.scan_type}")
+                raise ValueError(f"Unsupported scan type: {scan.scan_type}")
             
             # Generate Intelligent Summary
-            scan_summary = network_tools.generate_scan_summary(scan['scan_type'], scan['target'], results)
+            scan_summary = network_tools.generate_scan_summary(scan.scan_type, scan.target, results)
             results['analysis_summary'] = scan_summary
             
             print(f"[DEBUG] Scan {scan_id} completed successfully. Results size: {len(str(results))} bytes")
@@ -120,22 +139,22 @@ class ScanService:
             duration_ms = int((time.time() - start_time) * 1000)
             
             # Update scan with results
-            self.db.update_scan(scan_id, {
+            self.scan_repo.update(scan_id, {
                 'status': 'completed',
                 'results': results,
-                'completed_at': datetime.utcnow().isoformat(),
+                'completed_at': datetime.utcnow(),
                 'duration_ms': duration_ms
             })
             
             # Log scan activity
-            self.db.log_activity(
-                user_id=scan['user_id'],
+            self.activity_repo.log_activity(
+                user_id=scan.user_id,
                 action='scan',
-                details={'scan_type': scan['scan_type'], 'target': scan['target'], 'duration_ms': duration_ms}
+                details={'scan_type': scan.scan_type, 'target': scan.target, 'duration_ms': duration_ms}
             )
             
             # Update user stats
-            self._update_user_stats(scan['user_id'], scan['scan_type'])
+            self._update_user_stats(scan.user_id, scan.scan_type)
             
             return results
             
@@ -143,10 +162,10 @@ class ScanService:
             # Update scan with error
             duration_ms = int((time.time() - start_time) * 1000)
             
-            self.db.update_scan(scan_id, {
+            self.scan_repo.update(scan_id, {
                 'status': 'failed',
                 'error': str(e),
-                'completed_at': datetime.utcnow().isoformat(),
+                'completed_at': datetime.utcnow(),
                 'duration_ms': duration_ms
             })
             
@@ -154,23 +173,11 @@ class ScanService:
     
     def _update_user_stats(self, user_id: str, scan_type: str):
         """Update user statistics after scan"""
-        stats_key = ''
-        
-        if scan_type == 'domain':
-            stats_key = 'total_scans'
-        elif scan_type == 'ip':
-            stats_key = 'total_scans'  # Count as scan
-        elif scan_type == 'ports':
-            stats_key = 'total_scans'
-        elif scan_type == 'whois':
-            stats_key = 'total_scans'
-        elif scan_type == 'dns':
-            stats_key = 'total_scans'
-        elif scan_type == 'subdomains':
-            stats_key = 'total_scans'
-        
-        if stats_key:
-            self.db.update_user_stats(user_id, {stats_key: 1})
+        # All scan types count as total_scans
+        stats = self.user_repo.get_stats(user_id)
+        if stats:
+            current_scans = stats.total_scans or 0
+            self.user_repo.update_stats(user_id, {'total_scans': current_scans + 1})
     
     def check_rate_limit(self, user_id: str, endpoint: str) -> tuple:
         """Check rate limit for user"""
@@ -178,49 +185,63 @@ class ScanService:
     
     def get_scan(self, scan_id: str, user_id: Optional[str] = None) -> Optional[Dict]:
         """Get scan by ID with optional ownership check"""
-        scan = self.db.get_scan(scan_id)
+        scan = self.scan_repo.get_by_id(scan_id)
         
         if not scan:
             return None
         
         # If user_id provided, check ownership
-        if user_id and scan['user_id'] != user_id:
+        if user_id and scan.user_id != user_id:
             # Check if user is admin
-            user = self.db.get_userby_id(user_id)
-            if not user or user.get('role') != 'admin':
+            user = self.user_repo.get_by_id(user_id)
+            if not user or user.role != 'admin':
                 return None
         
-        return scan
+        # Convert to dict
+        return self._scan_to_dict(scan)
     
     def get_user_scans(self, user_id: str, limit: int = 20, page: int = 1) -> Dict:
         """Get scans for a specific user"""
         skip = (page - 1) * limit
-        scans = self.db.get_user_scans(user_id, limit, skip)
-        total = self.db.get_user_scan_count(user_id)
+        scans = self.scan_repo.get_by_user(user_id, limit, skip)
+        total = self.scan_repo.count_by_user(user_id)
         
         return {
-            'scans': scans,
+            'scans': [self._scan_to_dict(s) for s in scans],
             'total': total,
             'page': page,
             'limit': limit,
-            'pages': (total + limit - 1) // limit
+            'pages': (total + limit - 1) // limit if limit > 0 else 1
         }
     
     def delete_scan(self, scan_id: str, user_id: str) -> bool:
         """Delete scan if user owns it or is admin"""
-        scan = self.db.get_scan(scan_id)
+        scan = self.scan_repo.get_by_id(scan_id)
         if not scan:
             return False
         
         # Check ownership
-        if scan['user_id'] != user_id:
+        if scan.user_id != user_id:
             # Check if user is admin
-            user = self.db.get_userby_id(user_id)
-            if not user or user.get('role') != 'admin':
+            user = self.user_repo.get_by_id(user_id)
+            if not user or user.role != 'admin':
                 return False
         
-        self.db.delete_scan(scan_id)
+        self.scan_repo.delete(scan_id)
         return True
-
-# Global instance
-scan_service = ScanService()
+    
+    def _scan_to_dict(self, scan) -> Dict:
+        """Convert NetworkScan model to dictionary"""
+        return {
+            'id': scan.id,
+            'user_id': scan.user_id,
+            'scan_type': scan.scan_type,
+            'target': scan.target,
+            'status': scan.status,
+            'results': scan.results,
+            'error': scan.error,
+            'started_at': scan.started_at.isoformat() if scan.started_at else None,
+            'completed_at': scan.completed_at.isoformat() if scan.completed_at else None,
+            'duration_ms': scan.duration_ms,
+            'scan_number': scan.scan_number
+        }

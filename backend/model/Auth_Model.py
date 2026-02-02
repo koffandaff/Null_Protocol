@@ -34,8 +34,11 @@ class UserCreate(BaseModel):
     
     @validator('username')
     def username_length(cls, v):
+        import re
         if len(v) < 3:
             raise ValueError('Username must be at least 3 characters')
+        if not re.match(r"^[a-zA-Z0-9_]+$", v):
+            raise ValueError('Username can only contain letters, numbers, and underscores')
         return v
     
     @validator('bio')
@@ -58,6 +61,49 @@ class TokenData(BaseModel):
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class OTPVerifyRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class PasswordResetConfirm(BaseModel):
+    email: EmailStr
+    otp: str # 6-digit code
+    new_password: str
+    
+    @validator('new_password')
+    def password_strength(cls, v):
+        import re
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r"\d", v):
+            raise ValueError('Password must contain at least one number')
+        if not re.search(r"[A-Z]", v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
+            raise ValueError('Password must contain at least one special character')
+        return v
+    
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_new_password: str
+
+    @validator('new_password')
+    def password_strength(cls, v):
+        import re
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not re.search(r"\d", v):
+            raise ValueError('Password must contain at least one number')
+        if not re.search(r"[A-Z]", v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
+            raise ValueError('Password must contain at least one special character')
+        return v
+   
 class UserResponse(BaseModel):
     id: str
     email: str

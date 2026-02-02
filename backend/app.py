@@ -55,88 +55,24 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-# Startup Event to Create Admin and Seed Data
+# Startup Event to Initialize Database and Seed Data
+# Default Credentials:
+# Admin: admin@fsociety.com / Admin123!
+# Admin: dhruvil@fsociety.com / Fsociety2026!
+# User:  mrrobot@fsociety.com / Elliot123!
 @app.on_event("startup")
 async def startup_event():
-    from model.Auth_Model import db
-    from service.Auth_Service import AuthService
-    import random
-    from datetime import timedelta
+    from database.engine import init_db, get_db_context
+    from database.seed import seed_database
     
-    auth_service = AuthService(db)
+    # Initialize database (create tables)
+    init_db()
     
-    # Create default admin
-    admin_email = "admin@fsociety.com"
-    if not db.get_userby_email(admin_email):
-        print(f"Creating default admin user: {admin_email}")
-        try:
-            admin_data = {
-                "email": admin_email,
-                "username": "admin",
-                "password": "Admin123!",
-                "role": "admin",
-                "full_name": "System Administrator",
-                "bio": "Root access authorized."
-            }
-            auth_service.register_user(admin_data)
-        except Exception as e:
-            print(f"Failed to create default admin: {e}")
+    # Seed with initial data
+    with get_db_context() as db:
+        seed_database(db)
     
-    # Seed demo users for admin dashboard
-    demo_users = [
-        {"email": "alice@example.com", "username": "alice_sec", "password": "Demo123!", "full_name": "Alice Security", "company": "CyberCorp"},
-        {"email": "bob@example.com", "username": "bob_hack", "password": "Demo123!", "full_name": "Bob Hacker", "company": "SecureNet"},
-        {"email": "charlie@example.com", "username": "charlie_dev", "password": "Demo123!", "full_name": "Charlie Dev", "company": "TechStart"},
-        {"email": "diana@example.com", "username": "diana_ops", "password": "Demo123!", "full_name": "Diana Ops", "company": "CloudSafe"},
-        {"email": "eve@example.com", "username": "eve_analyst", "password": "Demo123!", "full_name": "Eve Analyst", "company": "DataGuard"},
-    ]
-    
-    for user_data in demo_users:
-        if not db.get_userby_email(user_data["email"]):
-            try:
-                user_data["role"] = "user"
-                auth_service.register_user(user_data)
-                print(f"Created demo user: {user_data['email']}")
-            except Exception as e:
-                print(f"Failed to create {user_data['email']}: {e}")
-    
-    # Seed demo activities and stats
-    actions = ["scan", "chat", "security_audit", "phishing_check", "vpn_generate", "login"]
-    
-    for user_id, user in db.users.items():
-        # Add random stats
-        db.update_user_stats(user_id, {
-            'total_scans': random.randint(5, 50),
-            'phishing_checks': random.randint(2, 20),
-            'vpn_configs': random.randint(0, 5),
-            'reports_generated': random.randint(1, 10),
-            'last_active': datetime.utcnow().isoformat()
-        })
-        
-        # Add random activities
-        for _ in range(random.randint(3, 10)):
-            action = random.choice(actions)
-            activity_time = datetime.utcnow() - timedelta(
-                hours=random.randint(0, 72),
-                minutes=random.randint(0, 59)
-            )
-            
-            activity_id = str(random.randint(10000, 99999))
-            activity = {
-                'id': activity_id,
-                'user_id': user_id,
-                'action': action,
-                'details': {'target': f'example-{random.randint(1,100)}.com'},
-                'ip_address': f'192.168.1.{random.randint(1, 254)}',
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'timestamp': activity_time.isoformat()
-            }
-            
-            if user_id not in db.user_activities:
-                db.user_activities[user_id] = []
-            db.user_activities[user_id].append(activity)
-    
-    print(f"[SEED] Loaded {len(db.users)} users with activities and stats")
+    print("[STARTUP] Database initialized and seeded")
 
 # Include routers
 app.include_router(Auth_Router.router, prefix='/api/auth', tags=['Authentication'])
@@ -223,6 +159,6 @@ async def status_check():
             'security_scanning': 'active',
             'file_analysis': 'active',
             'ai_chat': 'active' if ai_available else 'unavailable',
-            'database': 'in-memory (active)'
+            'database': 'SQLite (active)'
         }
     }

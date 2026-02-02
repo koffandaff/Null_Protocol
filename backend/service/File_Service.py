@@ -5,6 +5,7 @@ from typing import Dict, Optional, List
 from datetime import datetime
 import time
 import httpx
+from sqlalchemy.orm import Session
 
 from model.File_Model import (
     HashCheckRequest, BatchHashCheckRequest, FileUploadRequest,
@@ -15,12 +16,15 @@ from utils.ssrf_guard import ssrf_guard
 from utils.file_tools import file_tools
 from utils.cache_tools import cache_tools
 from utils.rate_limiter import rate_limiter
-from model.Auth_Model import db
 from config.settings import settings
+from database.repositories.user_repository import UserRepository
+from database.repositories.activity_repository import ActivityRepository
 
 class FileService:
-    def __init__(self):
+    def __init__(self, db: Session):
         self.db = db
+        self.user_repo = UserRepository(db)
+        self.activity_repo = ActivityRepository(db)
         self.virustotal_api_key = settings.VIRUSTOTAL_API_KEY
         self.virustotal_enabled = settings.VIRUSTOTAL_ENABLED
     
@@ -66,7 +70,7 @@ class FileService:
             cache_tools.set(cache_key, scan_results)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="hash_check",
                 details={
@@ -78,8 +82,8 @@ class FileService:
             
             # Update stats
             if scan_results['reputation']['known_malicious']:
-                self.db.update_user_stats(user_id, {'malware_detected': 1})
-            self.db.update_user_stats(user_id, {'hash_checks': 1})
+                self._update_stat(user_id, {'malware_detected': 1})
+            self._update_stat(user_id, {'hash_checks': 1})
             
             return scan_results
             
@@ -148,7 +152,7 @@ class FileService:
                     cache_tools.set(cache_key, scan_results['results'][i])
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="hash_batch_check",
                 details={
@@ -158,9 +162,9 @@ class FileService:
             )
             
             # Update stats
-            self.db.update_user_stats(user_id, {'hash_checks': len(request.hashes)})
+            self._update_stat(user_id, {'hash_checks': len(request.hashes)})
             if scan_results['malicious_count'] > 0:
-                self.db.update_user_stats(user_id, {'malware_detected': scan_results['malicious_count']})
+                self._update_stat(user_id, {'malware_detected': scan_results['malicious_count']})
             
             return scan_results
             
@@ -226,7 +230,7 @@ class FileService:
             scan_results['total_duration_ms'] = int((time.time() - start_time) * 1000)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="file_analysis",
                 details={
@@ -238,9 +242,9 @@ class FileService:
             )
             
             # Update stats
-            self.db.update_user_stats(user_id, {'file_analysis': 1})
+            self._update_stat(user_id, {'file_analysis': 1})
             if scan_results['reputation'] and scan_results['reputation']['known_malicious']:
-                self.db.update_user_stats(user_id, {'malware_detected': 1})
+                self._update_stat(user_id, {'malware_detected': 1})
             
             return scan_results
             
@@ -292,7 +296,7 @@ class FileService:
             cache_tools.set(cache_key, vt_results)
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="virustotal_check",
                 details={
@@ -303,9 +307,9 @@ class FileService:
             )
             
             # Update stats
-            self.db.update_user_stats(user_id, {'virustotal_checks': 1})
+            self._update_stat(user_id, {'virustotal_checks': 1})
             if vt_results.get('positives', 0) > 0:
-                self.db.update_user_stats(user_id, {'malware_detected': 1})
+                self._update_stat(user_id, {'malware_detected': 1})
             
             return vt_results
             
@@ -367,8 +371,8 @@ class FileService:
     def get_malware_database_info(self, user_id: str) -> Dict:
         """Get information about the local malware database"""
         # Only admin can view database info
-        user = self.db.get_userby_id(user_id)
-        if not user or user.get('role') != 'admin':
+        user = self.user_repo.get_by_id(user_id)
+        if not user or user.role != 'admin':
             raise ValueError("Admin access required")
         
         db_path = settings.LOCAL_MALWARE_DB_PATH
@@ -399,8 +403,8 @@ class FileService:
     def update_malware_database(self, user_id: str, hashes: List[Dict]) -> Dict:
         """Update local malware database (admin only)"""
         # Only admin can update database
-        user = self.db.get_userby_id(user_id)
-        if not user or user.get('role') != 'admin':
+        user = self.user_repo.get_by_id(user_id)
+        if not user or user.role != 'admin':
             raise ValueError("Admin access required")
         
         try:
@@ -448,7 +452,7 @@ class FileService:
             file_tools.malware_hashes = file_tools._load_malware_database()
             
             # Log activity
-            self.db.log_activity(
+            self.activity_repo.log_activity(
                 user_id=user_id,
                 action="malware_db_update",
                 details={
@@ -468,6 +472,11 @@ class FileService:
             
         except Exception as e:
             raise ValueError(f"Failed to update malware database: {str(e)}")
-
-# Global instance
-file_service = FileService()
+    
+    def _update_stat(self, user_id: str, stat_updates: dict):
+        """Update user statistics via repository"""
+        stats = self.user_repo.get_stats(user_id)
+        if stats:
+            for key, increment in stat_updates.items():
+                current_value = getattr(stats, key, 0) or 0
+                self.user_repo.update_stats(user_id, {key: current_value + increment})

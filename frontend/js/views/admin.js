@@ -20,10 +20,16 @@ class AdminView {
                 <div style="flex: 1; padding: 2rem; overflow-y: auto; background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, transparent 100%);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                         <h1 class="page-title fade-in" style="margin: 0;">Admin Command Center</h1>
-                        <button id="export-btn" class="btn-outline" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;">
-                            <span class="material-symbols-outlined">download</span>
-                            Export Data
-                        </button>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="export-btn" class="btn-outline" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;">
+                                <span class="material-symbols-outlined">download</span>
+                                Export JSON
+                            </button>
+                            <button id="export-pdf-btn" class="btn-primary" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;">
+                                <span class="material-symbols-outlined">picture_as_pdf</span>
+                                Export PDF
+                            </button>
+                        </div>
                     </div>
                     
                     <div style="display: grid; gap: 2rem; max-width: 1400px;">
@@ -181,6 +187,34 @@ class AdminView {
                             </div>
                         </div>
 
+                        <!-- SQL Query Console -->
+                        <div class="card glass fade-in" style="animation-delay: 0.8s;">
+                            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="material-symbols-outlined" style="color: #f39c12;">terminal</span>
+                                SQL Query Console
+                            </h3>
+                            <div style="margin-bottom: 1rem;">
+                                <textarea id="sql-query-input" rows="4" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; color: #00ff9d; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; resize: vertical;" placeholder="-- Enter SQL Query here&#10;SELECT * FROM users;"></textarea>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                                <button id="sql-execute-btn" class="btn-primary" style="padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span class="material-symbols-outlined" style="font-size: 1rem;">play_arrow</span>
+                                    Execute Query
+                                </button>
+                                <button id="sql-clear-btn" class="btn-outline" style="padding: 0.5rem 1rem;">
+                                    Clear
+                                </button>
+                                <button id="sql-export-pdf-btn" class="btn-outline" style="padding: 0.5rem 1rem; display: none; align-items: center; gap: 0.5rem; border-color: var(--secondary); color: var(--secondary);">
+                                    <span class="material-symbols-outlined" style="font-size: 1rem;">picture_as_pdf</span>
+                                    Export Results
+                                </button>
+                                <span id="sql-status" style="margin-left: auto; color: var(--text-muted); font-size: 0.8rem; align-self: center;"></span>
+                            </div>
+                            <div id="sql-results" style="max-height: 400px; overflow: auto; background: rgba(0,0,0,0.3); border-radius: 8px; display: none;">
+                                <!-- Results will be inserted here -->
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -201,7 +235,8 @@ class AdminView {
         document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
 
         // Load all data
-        await Promise.all([
+        // Load all data independently (so one failure doesn't break everything)
+        await Promise.allSettled([
             this.loadStats(),
             this.loadUsers(),
             this.loadActivities(),
@@ -213,10 +248,27 @@ class AdminView {
 
         // Event listeners
         document.getElementById('export-btn').addEventListener('click', () => this.exportData());
+        document.getElementById('export-pdf-btn').addEventListener('click', () => this.exportUsersPDF());
         document.getElementById('refresh-activities').addEventListener('click', () => this.loadActivities());
         document.getElementById('activity-filter').addEventListener('change', (e) => this.loadActivities(e.target.value));
         document.getElementById('user-search').addEventListener('input', (e) => this.filterUsers(e.target.value));
         document.getElementById('chart-period').addEventListener('change', () => this.initCharts());
+
+        // SQL Console event listeners
+        document.getElementById('sql-execute-btn').addEventListener('click', () => this.executeSQL());
+        document.getElementById('sql-export-pdf-btn').addEventListener('click', () => this.exportSQLResultsPDF());
+        document.getElementById('sql-clear-btn').addEventListener('click', () => {
+            document.getElementById('sql-query-input').value = '';
+            document.getElementById('sql-results').style.display = 'none';
+            document.getElementById('sql-export-pdf-btn').style.display = 'none';
+            document.getElementById('sql-status').textContent = '';
+        });
+        // Ctrl+Enter to execute
+        document.getElementById('sql-query-input').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                this.executeSQL();
+            }
+        });
 
         // Setup live polling intervals
         this.startLiveUpdates();
@@ -239,8 +291,9 @@ class AdminView {
 
         // Stats - refresh every 30 seconds
         this.intervals.push(setInterval(() => {
+            const searchQuery = document.getElementById('user-search')?.value;
             this.loadStats();
-            this.loadUsers();
+            if (!searchQuery) this.loadUsers();
         }, 30000));
 
         // Cleanup on navigation
@@ -267,9 +320,12 @@ class AdminView {
         }
     }
 
-    async loadUsers() {
+    async loadUsers(search = '') {
         try {
-            const response = await Api.get('/admin/users?limit=50');
+            let url = '/admin/users?limit=50';
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+
+            const response = await Api.get(url);
             this.users = response?.users || [];
             this.renderUsers(this.users);
         } catch (e) {
@@ -294,7 +350,10 @@ class AdminView {
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span class="badge" style="background: ${user.role === 'admin' ? 'var(--secondary)' : 'rgba(255,255,255,0.1)'}; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem; color: ${user.role === 'admin' ? '#000' : '#fff'};">${user.role}</span>
+                        <span class="badge" style="background: ${user.role === 'admin' ? 'var(--secondary)' : 'rgba(52, 152, 219, 0.2)'}; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem; color: ${user.role === 'admin' ? '#000' : '#3498db'}; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 0.8rem; vertical-align: middle;">${user.role === 'admin' ? 'shield_person' : 'person'}</span>
+                            ${user.role.toUpperCase()}
+                        </span>
                         <span style="font-size: 0.75rem; color: ${user.is_active ? 'var(--primary)' : '#ff4757'};">● ${user.is_active ? 'Active' : 'Inactive'}</span>
                         <button class="btn-outline action-btn" onclick="adminView.toggleUserStatus('${user.id}', ${!user.is_active})">
                             ${user.is_active ? 'Disable' : 'Enable'}
@@ -311,11 +370,20 @@ class AdminView {
     }
 
     filterUsers(query) {
-        const filtered = this.users.filter(user =>
-            (user.username || '').toLowerCase().includes(query.toLowerCase()) ||
-            (user.email || '').toLowerCase().includes(query.toLowerCase())
-        );
-        this.renderUsers(filtered);
+        if (query.length > 2) {
+            // Server-side search for longer queries
+            this.loadUsers(query);
+        } else if (query.length === 0) {
+            // Reload all if cleared
+            this.loadUsers();
+        } else {
+            // Local filtering for short strings
+            const filtered = this.users.filter(user =>
+                (user.username || '').toLowerCase().includes(query.toLowerCase()) ||
+                (user.email || '').toLowerCase().includes(query.toLowerCase())
+            );
+            this.renderUsers(filtered);
+        }
     }
 
     async toggleUserStatus(userId, newStatus) {
@@ -542,6 +610,268 @@ class AdminView {
         URL.revokeObjectURL(url);
 
         Utils.showToast('Data exported successfully', 'success');
+    }
+
+    // ==================== SQL CONSOLE ====================
+    async executeSQL() {
+        const queryInput = document.getElementById('sql-query-input');
+        const resultsContainer = document.getElementById('sql-results');
+        const statusSpan = document.getElementById('sql-status');
+        const executeBtn = document.getElementById('sql-execute-btn');
+
+        const query = queryInput.value.trim();
+        if (!query) {
+            Utils.showToast('Please enter a SQL query', 'warning');
+            return;
+        }
+
+        // Show loading state
+        executeBtn.disabled = true;
+        executeBtn.innerHTML = '<span class="material-symbols-outlined rotating" style="font-size: 1rem;">sync</span> Executing...';
+        statusSpan.textContent = 'Running query...';
+        statusSpan.style.color = 'var(--text-muted)';
+
+        try {
+            const response = await Api.post('/admin/sql', { query });
+
+            if (response.success) {
+                statusSpan.textContent = response.message;
+                statusSpan.style.color = '#2ed573';
+
+                if (response.columns.length > 0 && response.rows.length > 0) {
+                    // Save results for PDF export
+                    this.lastSQLResults = response;
+                    // Render table
+                    resultsContainer.innerHTML = this.renderSQLTable(response.columns, response.rows);
+                    resultsContainer.style.display = 'block';
+                    document.getElementById('sql-export-pdf-btn').style.display = 'flex';
+                } else if (response.row_count > 0) {
+                    // For UPDATE/INSERT/DELETE
+                    resultsContainer.innerHTML = `
+                        <div style="padding: 1rem; text-align: center; color: #2ed573;">
+                            <span class="material-symbols-outlined" style="font-size: 2rem;">check_circle</span>
+                            <p style="margin-top: 0.5rem;">${response.message}</p>
+                        </div>
+                    `;
+                    resultsContainer.style.display = 'block';
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div style="padding: 1rem; text-align: center; color: var(--text-muted);">
+                            <span class="material-symbols-outlined" style="font-size: 2rem;">inbox</span>
+                            <p style="margin-top: 0.5rem;">No rows returned</p>
+                        </div>
+                    `;
+                    resultsContainer.style.display = 'block';
+                }
+            } else {
+                statusSpan.textContent = response.message;
+                statusSpan.style.color = '#e74c3c';
+                resultsContainer.innerHTML = `
+                    <div style="padding: 1rem; color: #e74c3c;">
+                        <span class="material-symbols-outlined">error</span>
+                        <code style="display: block; margin-top: 0.5rem; white-space: pre-wrap;">${response.message}</code>
+                    </div>
+                `;
+                resultsContainer.style.display = 'block';
+            }
+        } catch (error) {
+            statusSpan.textContent = 'Error executing query';
+            statusSpan.style.color = '#e74c3c';
+            resultsContainer.innerHTML = `
+                <div style="padding: 1rem; color: #e74c3c;">
+                    <span class="material-symbols-outlined">error</span>
+                    <code style="display: block; margin-top: 0.5rem;">${error.message}</code>
+                </div>
+            `;
+            resultsContainer.style.display = 'block';
+        } finally {
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1rem;">play_arrow</span> Execute Query';
+        }
+    }
+
+    renderSQLTable(columns, rows) {
+        const headerCells = columns.map(col => `<th style="padding: 0.75rem 1rem; text-align: left; background: rgba(0,255,157,0.1); color: var(--primary); font-weight: 600; white-space: nowrap;">${col}</th>`).join('');
+
+        const bodyRows = rows.map(row => {
+            const cells = row.map(cell => {
+                let displayValue = cell;
+                // Format different types
+                if (cell === null) {
+                    displayValue = '<span style="color: var(--text-muted); font-style: italic;">NULL</span>';
+                } else if (typeof cell === 'object') {
+                    displayValue = `<code style="font-size: 0.75rem;">${JSON.stringify(cell)}</code>`;
+                } else if (typeof cell === 'boolean') {
+                    displayValue = cell ? '<span style="color: #2ed573;">true</span>' : '<span style="color: #e74c3c;">false</span>';
+                }
+                return `<td style="padding: 0.5rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${String(cell).replace(/"/g, '&quot;')}">${displayValue}</td>`;
+            }).join('');
+            return `<tr style="transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">${cells}</tr>`;
+        }).join('');
+
+        return `
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead><tr>${headerCells}</tr></thead>
+                <tbody>${bodyRows}</tbody>
+            </table>
+        `;
+    }
+
+    // ==================== PDF EXPORTS ====================
+    async exportUsersPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const width = doc.internal.pageSize.getWidth();
+        const height = doc.internal.pageSize.getHeight();
+
+        // Dark Background
+        doc.setFillColor(15, 15, 15);
+        doc.rect(0, 0, width, height, 'F');
+
+        // Fsociety Branding
+        doc.setFont("courier", "bold");
+        doc.setFontSize(28);
+        doc.setTextColor(0, 255, 157); // fsociety green
+        doc.text("FSOCIETY", 14, 25);
+
+        doc.setFontSize(10);
+        doc.setTextColor(52, 152, 219); // secondary blue
+        doc.text("INTERNAL ASSET: USER_MANIFEST.DAT", 14, 32);
+
+        doc.setDrawColor(0, 255, 157);
+        doc.setLineWidth(0.5);
+        doc.line(14, 35, width - 14, 35);
+
+        const tableData = this.users.map(u => [
+            u.username || 'N/A',
+            u.email,
+            u.role.toUpperCase(),
+            u.is_active ? 'ACTIVE' : 'INACTIVE',
+            new Date(u.created_at).toLocaleDateString()
+        ]);
+
+        doc.autoTable({
+            startY: 45,
+            head: [['Username', 'Email', 'Role', 'Status', 'Joined']],
+            body: tableData,
+            theme: 'grid',
+            styles: {
+                fillColor: [25, 25, 25],
+                textColor: [255, 255, 255],
+                fontSize: 9,
+                font: "courier",
+                lineColor: [40, 40, 40]
+            },
+            headStyles: {
+                fillColor: [0, 255, 157],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+                fillColor: [20, 20, 20]
+            }
+        });
+
+        doc.save(`fsociety_users_manifest_${new Date().getTime()}.pdf`);
+        Utils.showToast("Secure PDF Manifest Exported", "success");
+    }
+
+    async exportSQLResultsPDF() {
+        if (!this.lastSQLResults) return;
+
+        const { jsPDF } = window.jspdf;
+        const columns = this.lastSQLResults.columns;
+        const rows = this.lastSQLResults.rows.map(row =>
+            row.map(cell => {
+                if (cell === null) return 'NULL';
+                if (typeof cell === 'object') return JSON.stringify(cell);
+                return String(cell);
+            })
+        );
+
+        // DYNAMIC PAGE SIZING based on column count
+        // Default is A4 Landscape (297mm width)
+        let format = 'a4';
+        let orientation = 'l';
+        let fontSize = 8;
+
+        if (columns.length > 15) {
+            format = 'a3'; // 420mm width
+            fontSize = 7;
+        }
+        if (columns.length > 25) {
+            format = 'a2'; // 594mm width
+            fontSize = 6;
+        }
+
+        const doc = new jsPDF(orientation, 'mm', format);
+        const width = doc.internal.pageSize.getWidth();
+        const height = doc.internal.pageSize.getHeight();
+
+        // Dark Background
+        doc.setFillColor(10, 10, 10);
+        doc.rect(0, 0, width, height, 'F');
+
+        const querySnippet = document.getElementById('sql-query-input').value.substring(0, 60).replace(/\n/g, ' ');
+
+        doc.setFont("courier", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(243, 156, 18); // Amber/Orange for SQL
+        doc.text("DATABASE_QUERY_RESULTS", 14, 20);
+
+        doc.setFontSize(9);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`QUERY_HASH: ${Utils.generateId().toUpperCase()}`, 14, 28);
+        doc.text(`TIMESTAMP: ${new Date().toISOString()}`, 14, 33);
+        doc.text(`ORIGIN: FSOCIETY_SQL_CONSOLE | FORMAT: ${format.toUpperCase()}`, 14, 38);
+
+        doc.autoTable({
+            startY: 45,
+            head: [columns],
+            body: rows,
+            theme: 'grid',
+            horizontalPageBreak: true,
+            horizontalPageBreakRepeat: 0,
+            styles: {
+                fontSize: fontSize,
+                cellPadding: 1.5,
+                font: "courier",
+                fillColor: [20, 20, 20],
+                textColor: [200, 200, 200],
+                lineColor: [40, 40, 40],
+                overflow: 'linebreak',
+                valign: 'middle'
+            },
+            headStyles: {
+                fillColor: [243, 156, 18],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold'
+            },
+            didParseCell: function (data) {
+                // Only truncate if extremely long and columns are many
+                if (data.section === 'body' && data.cell.raw && columns.length > 10) {
+                    const val = String(data.cell.raw);
+                    if (val.length > 100) {
+                        data.cell.text = [val.substring(0, 30) + '...' + val.substring(val.length - 20)];
+                    }
+                }
+            },
+            alternateRowStyles: {
+                fillColor: [15, 15, 15]
+            },
+            margin: { left: 10, right: 10, bottom: 20 }
+        });
+
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(`Page ${i} of ${pageCount} | Fsociety Secure Audit`, width - 60, height - 10);
+        }
+
+        doc.save(`sql_manifest_${new Date().getTime()}.pdf`);
+        Utils.showToast(`Exported ${format.toUpperCase()} Report`, "success");
     }
 }
 

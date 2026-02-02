@@ -6,13 +6,17 @@ import httpx
 import json
 from typing import AsyncGenerator, Optional, Dict, List
 from datetime import datetime
+from sqlalchemy.orm import Session
 
 from model.Chat_Model import ChatDatabase, ChatSession, ChatMessage
+from database.repositories.activity_repository import ActivityRepository
 
 
 class ChatService:
-    def __init__(self, db: ChatDatabase):
-        self.db = db
+    def __init__(self, sql_db: Session, chat_db: ChatDatabase):
+        self.db = chat_db  # In-memory chat storage
+        self.sql_db = sql_db  # SQLAlchemy session for logging
+        self.activity_repo = ActivityRepository(sql_db)
         self.ollama_url = "http://localhost:11434"
         self.model = "IHA089/drana-infinity-3b:3b"  # Use available local model
         self.timeout = 120.0  # Longer timeout for AI responses
@@ -114,13 +118,13 @@ class ChatService:
                 if full_response:
                     self.db.add_message(session_id, user_id, "assistant", full_response)
                     # Log chat activity
-                    from model.Auth_Model import db as auth_db
-                    auth_db.log_activity(
+                    self.activity_repo.log_activity(
                         user_id=user_id,
                         action='chat',
                         details={'session_id': session_id, 'message_preview': message[:50]}
                     )
                     
+
         except httpx.TimeoutException:
             yield json.dumps({"error": "Ollama request timed out"})
         except httpx.ConnectError:
@@ -151,6 +155,4 @@ class ChatService:
         return self.db.update_session_title(session_id, user_id, new_title)
 
 
-# Global service instance
-from model.Chat_Model import chat_db
-chat_service = ChatService(chat_db)
+    

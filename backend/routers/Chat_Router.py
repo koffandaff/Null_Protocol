@@ -1,35 +1,26 @@
 """
-Chat Router - Protected API endpoints for AI Chatbot
-Uses Server-Sent Events (SSE) for streaming responses
+Chat Router - SQLite Version
+
+Protected API endpoints for AI Chatbot.
+Uses Server-Sent Events (SSE) for streaming responses.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 
-from model.Chat_Model import ChatRequest, ChatSessionResponse, ChatSessionDetail
-from service.Chat_Service import chat_service
-from service.Auth_Service import AuthService
-from model.Auth_Model import db as auth_db
-
+from model.Chat_Model import ChatRequest, ChatSessionResponse, ChatSessionDetail, chat_db
+from service.Chat_Service import ChatService
+from database.engine import get_db
+from routers.dependencies import get_current_user
 
 router = APIRouter()
-security = HTTPBearer()
-auth_service = AuthService(auth_db)
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Dependency to get current authenticated user"""
-    token = credentials.credentials
-    user = auth_service.get_current_user(token)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+def get_chat_service(db: Session = Depends(get_db)) -> ChatService:
+    """Get ChatService with database session"""
+    return ChatService(db, chat_db)
 
 
 # ========================
@@ -37,14 +28,20 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # ========================
 
 @router.get("/sessions", response_model=List[ChatSessionResponse])
-async def get_sessions(current_user: dict = Depends(get_current_user)):
+async def get_sessions(
+    current_user: dict = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
+):
     """Get all chat sessions for the current user"""
     sessions = chat_service.get_user_sessions(current_user["id"])
     return sessions
 
 
 @router.post("/sessions", response_model=ChatSessionResponse)
-async def create_session(current_user: dict = Depends(get_current_user)):
+async def create_session(
+    current_user: dict = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
+):
     """Create a new empty chat session"""
     session = chat_service.create_session(current_user["id"])
     return ChatSessionResponse(
@@ -57,7 +54,11 @@ async def create_session(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/sessions/{session_id}")
-async def get_session(session_id: str, current_user: dict = Depends(get_current_user)):
+async def get_session(
+    session_id: str,
+    current_user: dict = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
+):
     """Get a specific chat session with all messages"""
     session = chat_service.get_session(session_id, current_user["id"])
     if not session:
@@ -80,7 +81,11 @@ async def get_session(session_id: str, current_user: dict = Depends(get_current_
 
 
 @router.delete("/sessions/{session_id}")
-async def delete_session(session_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_session(
+    session_id: str,
+    current_user: dict = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
+):
     """Delete a chat session"""
     deleted = chat_service.delete_session(session_id, current_user["id"])
     if not deleted:
@@ -96,7 +101,8 @@ class UpdateTitleRequest(BaseModel):
 async def update_session_title(
     session_id: str, 
     request: UpdateTitleRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
 ):
     """Update chat session title"""
     updated = chat_service.update_session_title(session_id, current_user["id"], request.title)
@@ -117,7 +123,8 @@ class SendMessageRequest(BaseModel):
 @router.post("/send")
 async def send_message(
     request: SendMessageRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service)
 ):
     """
     Send a message and receive streaming response via SSE.
@@ -150,7 +157,7 @@ async def send_message(
 # ========================
 
 @router.get("/health")
-async def check_health():
+async def check_health(chat_service: ChatService = Depends(get_chat_service)):
     """Check if Ollama is running and model is available"""
     health = await chat_service.check_ollama_health()
     return {

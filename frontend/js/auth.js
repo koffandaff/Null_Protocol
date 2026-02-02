@@ -13,7 +13,6 @@ class Auth {
             }
 
             localStorage.setItem('access_token', response.access_token);
-            localStorage.setItem('refresh_token', response.refresh_token);
             localStorage.setItem('user', JSON.stringify(response.user));
 
             return response.user;
@@ -27,8 +26,10 @@ class Auth {
     }
 
     static logout() {
+        // Call backend to clear cookie
+        Api.post('/auth/logout');
+
         localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         window.location.hash = '/login';
     }
@@ -43,6 +44,18 @@ class Auth {
 
     static getCurrentUser() {
         return this.getUser();
+    }
+
+    static async forgotPassword(email) {
+        return await Api.post('/auth/forgot-password', { email });
+    }
+
+    static async verifyOtp(email, otp) {
+        return await Api.post('/auth/verify-otp', { email, otp });
+    }
+
+    static async resetPassword(email, otp, new_password) {
+        return await Api.post('/auth/reset-password', { email, otp, new_password });
     }
 }
 

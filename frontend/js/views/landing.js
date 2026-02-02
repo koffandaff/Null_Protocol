@@ -1,3 +1,5 @@
+import Auth from '../auth.js';
+
 class LandingView {
     async render() {
         return `
@@ -19,8 +21,15 @@ class LandingView {
                         <span style="color: #fff; animation: blink 1s step-end infinite; font-weight: 300; text-shadow: 0 0 10px rgba(255,255,255,0.5);">_</span>
                     </a>
                     <div style="display: flex; gap: 1rem; align-items: center;">
-                        <a href="#/login" class="btn-outline" style="padding: 0.5rem 1.5rem;">Login</a>
-                        <a href="#/signup" class="btn" style="padding: 0.5rem 1.5rem;">Get Started</a>
+                        ${Auth.isAuthenticated() ? `
+                            <a href="#/dashboard" class="btn" style="padding: 0.5rem 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="material-symbols-outlined" style="font-size: 1.2rem;">dashboard</span>
+                                Dashboard
+                            </a>
+                        ` : `
+                            <a href="#/login" class="btn-outline" style="padding: 0.5rem 1.5rem;">Login</a>
+                            <a href="#/signup" class="btn" style="padding: 0.5rem 1.5rem;">Get Started</a>
+                        `}
                     </div>
                 </nav>
 
@@ -41,9 +50,9 @@ class LandingView {
                             </p>
                             
                             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                                <a href="#/signup" class="btn" style="padding: 1rem 2.5rem; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                    <span class="material-symbols-outlined">rocket_launch</span>
-                                    Get Started
+                                <a href="${Auth.isAuthenticated() ? '#/dashboard' : '#/signup'}" class="btn" style="padding: 1rem 2.5rem; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span class="material-symbols-outlined">${Auth.isAuthenticated() ? 'dashboard' : 'rocket_launch'}</span>
+                                    ${Auth.isAuthenticated() ? 'Go to Dashboard' : 'Get Started'}
                                 </a>
                                 <a href="#features" class="btn-outline" style="padding: 1rem 2.5rem; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
                                     <span class="material-symbols-outlined">security</span>
@@ -196,18 +205,22 @@ class LandingView {
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem;">
                         <!-- Dhruvil Adroja -->
                         <div class="card glass creator-card" style="text-align: center; padding: 3rem 2rem; border: 1px solid rgba(0, 255, 157, 0.1); transition: all 0.3s ease;">
-                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; color: #000; box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);">DA</div>
+                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; color: #000; box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);">
+                                <span class="material-symbols-outlined" style="font-size: 3.5rem;">engineering</span>
+                            </div>
                             <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Dhruvil Adroja</h3>
                             <div style="color: var(--primary); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 500;">Lead Full Stack Developer</div>
                             <div style="background: rgba(0, 255, 157, 0.1); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; color: var(--text-main); display: inline-block;">
                                 <span class="material-symbols-outlined" style="font-size: 0.9rem; vertical-align: middle; margin-right: 0.2rem;">terminal</span>
-                                Linux Recon Engine Architect
+                                Linux & Recon Engine Architect
                             </div>
                         </div>
 
                         <!-- Vraj Patel -->
                         <div class="card glass creator-card" style="text-align: center; padding: 3rem 2rem; border: 1px solid rgba(0, 255, 157, 0.1); transition: all 0.3s ease;">
-                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), #4682B4); border-radius: 50%; margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; color: #000; box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);">VP</div>
+                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), #4682B4); border-radius: 50%; margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; color: #000; box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);">
+                                <span class="material-symbols-outlined" style="font-size: 3.5rem;">dns</span>
+                            </div>
                             <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Vraj Patel</h3>
                             <div style="color: var(--primary); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 500;">Full Stack Developer</div>
                             <p style="color: var(--text-muted); font-size: 0.85rem;">Architecting scalable backend infrastructures and secure communication protocols.</p>
@@ -215,7 +228,9 @@ class LandingView {
 
                         <!-- Krisha Patel -->
                         <div class="card glass creator-card" style="text-align: center; padding: 3rem 2rem; border: 1px solid rgba(0, 255, 157, 0.1); transition: all 0.3s ease;">
-                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--secondary), #ff4757); border-radius: 50%; margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; color: #000; box-shadow: 0 0 20px rgba(255, 165, 2, 0.3);">KP</div>
+                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--secondary), #ff4757); border-radius: 50%; margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; color: #000; box-shadow: 0 0 20px rgba(255, 165, 2, 0.3);">
+                                <span class="material-symbols-outlined" style="font-size: 3.5rem;">palette</span>
+                            </div>
                             <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Krisha Patel</h3>
                             <div style="color: var(--primary); font-size: 0.9rem; margin-bottom: 1rem; font-weight: 500;">Full Stack Developer</div>
                             <p style="color: var(--text-muted); font-size: 0.85rem;">Crafting intuitive security interfaces and advanced data visualizations.</p>
@@ -234,11 +249,11 @@ class LandingView {
                         Join thousands of security professionals who trust Fsociety to protect their digital assets.
                     </p>
                     <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                        <a href="#/signup" class="btn" style="padding: 1rem 3rem; font-size: 1.1rem;">
-                            Initialize Connection
+                        <a href="${Auth.isAuthenticated() ? '#/dashboard' : '#/signup'}" class="btn" style="padding: 1rem 3rem; font-size: 1.1rem;">
+                            ${Auth.isAuthenticated() ? 'Enter Command Center' : 'Initialize Connection'}
                         </a>
-                        <a href="#/login" class="btn-outline" style="padding: 1rem 3rem; font-size: 1.1rem;">
-                            Access Dashboard
+                        <a href="${Auth.isAuthenticated() ? '#/dashboard' : '#/login'}" class="btn-outline" style="padding: 1rem 3rem; font-size: 1.1rem;">
+                            ${Auth.isAuthenticated() ? 'View Active Logs' : 'Access Dashboard'}
                         </a>
                     </div>
                 </div>
@@ -253,9 +268,9 @@ class LandingView {
                         <span style="color: var(--text-muted); margin-left: 1rem; font-size: 0.85rem;">© 2026 All rights reserved</span>
                     </div>
                     <div style="display: flex; gap: 2rem; font-size: 0.9rem;">
-                        <a href="#" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
-                        <a href="#" style="color: var(--text-muted); text-decoration: none;">Terms of Service</a>
-                        <a href="#" style="color: var(--text-muted); text-decoration: none;">Contact</a>
+                        <a href="#/privacy" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
+                        <a href="#/terms" style="color: var(--text-muted); text-decoration: none;">Terms of Service</a>
+                        <a href="#/contact" style="color: var(--text-muted); text-decoration: none;">Contact</a>
                     </div>
                 </div>
             </footer>
@@ -308,33 +323,55 @@ class LandingView {
     startTerminal() {
         const terminal = document.getElementById('recon-terminal');
         const logs = [
-            'Initializing full-stack reconnaissance...',
-            'Accessing Linux Recon Engine...',
-            'Bypassing secure handshakes...',
-            'Injecting Fsociety payload...',
-            'Scanning for digital footprints...',
-            'Cybiz AI analysis in progress...',
-            'Handshake captured on port 443...',
-            'VPN tunnel established at 10.8.0.1...',
-            'Footprint found: leaked credential detected',
-            'Applying glassmorphism layers...',
-            'Security audit completed: 0 threats found',
-            'Ready for next operation.'
+            { type: 'info', msg: 'Initializing Fsociety Core v2.4.0...' },
+            { type: 'success', msg: 'Connected to Secure Gateway (10.8.0.1)' },
+            { type: 'info', msg: 'Run: <span style="color: #fff">fsociety scan --target 192.168.1.100</span>' },
+            { type: 'warning', msg: 'Port Scanning: Discovered open ports [80, 443, 22]' },
+            { type: 'info', msg: 'Analyzing SSL/TLS headers...' },
+            { type: 'success', msg: 'Header Security: A+ Rating' },
+            { type: 'info', msg: 'Run: <span style="color: #fff">fsociety phishing --check url</span>' },
+            { type: 'error', msg: 'Phishing Detected: Malicious pattern found in domain' },
+            { type: 'info', msg: 'Generating OpenVPN Configuration...' },
+            { type: 'success', msg: 'VPN Config exported: client.ovpn' },
+            { type: 'info', msg: 'Digital Footprint: Searching public leaks...' },
+            { type: 'warning', msg: 'OSINT: 2 Potential credential leaks found' },
+            { type: 'success', msg: 'System Status: Optimal. Ready for command.' }
         ];
 
         let i = 0;
         const addLog = () => {
+            const entry = logs[i % logs.length];
             const line = document.createElement('div');
             line.style.marginBottom = '0.5rem';
-            line.innerHTML = `<span style="opacity: 0.5;">[${new Date().toLocaleTimeString()}]</span> <span style="color: var(--secondary)">$</span> ${logs[i % logs.length]}`;
+            line.style.opacity = '0';
+            line.style.animation = 'fadeIn 0.3s forwards';
+
+            let icon = '$';
+            let color = 'var(--primary)';
+
+            if (entry.type === 'error') { icon = '✖'; color = '#ff4757'; }
+            if (entry.type === 'warning') { icon = '⚠'; color = '#ffbd2e'; }
+            if (entry.type === 'success') { icon = '✓'; color = '#2ed573'; }
+
+            const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+            line.innerHTML = `
+                <span style="color: var(--text-muted); font-size: 0.75rem;">[${timestamp}]</span> 
+                <span style="color: ${color}; margin-right: 0.5rem; font-weight: bold;">${icon}</span> 
+                <span style="color: ${entry.type === 'info' ? 'var(--text-main)' : color}">${entry.msg}</span>
+            `;
+
             terminal.appendChild(line);
 
-            if (terminal.children.length > 8) {
+            if (terminal.children.length > 9) {
                 terminal.removeChild(terminal.firstChild);
             }
 
+            // Scroll to bottom
+            terminal.scrollTop = terminal.scrollHeight;
+
             i++;
-            setTimeout(addLog, Math.random() * 2000 + 1000);
+            setTimeout(addLog, Math.random() * 1500 + 800);
         };
 
         addLog();

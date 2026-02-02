@@ -22,7 +22,10 @@ class LoginView {
                             </div>
                             
                             <div style="margin-bottom: 2rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px;">PASSWORD</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px;">PASSWORD</label>
+                                    <a href="#/forgot-password" style="font-size: 0.8rem; color: var(--primary); text-decoration: none;">Forgot Password?</a>
+                                </div>
                                 <div style="position: relative; display: flex; align-items: center;">
                                     <input type="password" id="password" required placeholder="••••••••" style="width: 100%; padding-right: 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
                                     <span class="material-symbols-outlined toggle-password" style="position: absolute; right: 10px; cursor: pointer; color: var(--text-muted); user-select: none; z-index: 10;">visibility</span>

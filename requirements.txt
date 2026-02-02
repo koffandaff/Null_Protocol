@@ -1,0 +1,42 @@
+# Fsociety Backend Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core Framework
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+
+# Database
+sqlalchemy
+
+# Authentication
+python-jose[cryptography]
+bcrypt
+passlib
+
+# HTTP Client
+httpx
+
+# Rate Limiting
+slowapi
+
+# System Monitoring
+psutil
+
+# Security & Crypto
+cryptography
+
+# Network Tools
+dnspython
+python-whois
+
+# File Analysis
+python-magic-bin
+yara-python
+
+# Email (for OTP)
+aiosmtplib
+
+# Validation
+email-validator
