@@ -289,17 +289,67 @@ class NetworkTools:
     
     # ========== PORT SCANNING ==========
     
+    
     def scan_ports(self, ip: str, ports: List[int] = None) -> Dict:
-        """Scan common ports on an IP using pure Python sockets (Vercel compatible)"""
+        """Smart scan: Tries Nmap (if installed), falls back to pure Python Sockets (Vercel compatible)"""
+        try:
+            return self._scan_ports_nmap(ip, ports)
+        except Exception as e:
+            # Fallback to sockets if nmap is missing or fails (common on Vercel)
+            print(f"[SCAN] Nmap unavailable ({str(e)}), using socket fallback.")
+            return self._scan_ports_socket(ip, ports)
+
+    def _scan_ports_nmap(self, ip: str, ports: List[int] = None) -> Dict:
+        """Scan using python-nmap wrapper"""
+        # Import here to avoid top-level ImportErrors on Vercel
+        import nmap
+        
+        nm = nmap.PortScanner()
+        port_str = ','.join(map(str, ports)) if ports else '21-445,1433,3306,3389,5432,6379,8000,8080,27017'
+        
+        args = '-sS -sV -O -T4' if os.name != 'nt' else '-sT -sV -T4' # sS requires root, sT is connect scan
+        nm.scan(ip, ports=port_str, arguments=args)
+        
+        open_ports = []
+        if ip in nm.all_hosts():
+            for proto in nm[ip].all_protocols():
+                lport = nm[ip][proto].keys()
+                for port in lport:
+                    service = nm[ip][proto][port]
+                    state = service['state']
+                    if state == 'open':
+                         risk_info = self.get_port_risk(port)
+                         open_ports.append({
+                            'port': port,
+                            'service': service.get('name', self._get_service_name(port)),
+                            'version': service.get('product', '') + ' ' + service.get('version', ''),
+                            'status': 'open',
+                            'risk': risk_info['level'],
+                            'risk_score': risk_info['score'],
+                            'risk_color': risk_info['color']
+                        })
+                        
+        return {
+            'ip': ip,
+            'open_ports': open_ports,
+            'total_scanned': len(ports) if ports else 100, # Approximate
+            'total_open': len(open_ports),
+            'method': 'nmap'
+        }
+
+    def _scan_ports_socket(self, ip: str, ports: List[int] = None) -> Dict:
+        """Scan using pure Python sockets (Vercel compatible)"""
         if not ports:
-            # Common top ports
-            ports = [21, 22, 23, 25, 53, 80, 110, 143, 443, 465, 
-                    587, 993, 995, 3306, 3389, 5432, 8080, 8443]
+            # Common top ports (Expanded)
+            ports = [
+                21, 22, 23, 25, 53, 80, 81, 110, 111, 135, 139, 143, 443, 445, 
+                465, 587, 993, 995, 1433, 1521, 3306, 3389, 5432, 5900, 6379, 
+                8000, 8080, 8443, 8888, 9200, 27017, 27018
+            ]
         
         open_ports = []
         
-        # Simple synchronous scan for now (to avoid async complexity in this sync method)
-        # For production, we'd use asyncio, but this keeps it compatible with current architecture
+        # Simple synchronous scan for now
         for port in ports:
             try:
                 # Create a new socket
@@ -327,7 +377,8 @@ class NetworkTools:
             'ip': ip,
             'open_ports': open_ports,
             'total_scanned': len(ports),
-            'total_open': len(open_ports)
+            'total_open': len(open_ports),
+            'method': 'socket'
         }
     
     def _get_service_name(self, port: int) -> str:
@@ -339,18 +390,32 @@ class NetworkTools:
             25: 'SMTP',
             53: 'DNS',
             80: 'HTTP',
+            81: 'HTTP-ALT',
             110: 'POP3',
+            111: 'RPC',
+            135: 'MS-RPC',
+            139: 'NetBIOS',
             143: 'IMAP',
             443: 'HTTPS',
+            445: 'SMB',
             465: 'SMTPS',
             587: 'SMTP Submission',
             993: 'IMAPS',
             995: 'POP3S',
+            1433: 'MSSQL',
+            1521: 'Oracle',
             3306: 'MySQL',
             3389: 'RDP',
             5432: 'PostgreSQL',
+            5900: 'VNC',
+            6379: 'Redis',
+            8000: 'HTTP-DEV',
             8080: 'HTTP-ALT',
-            8443: 'HTTPS-ALT'
+            8443: 'HTTPS-ALT',
+            8888: 'HTTP-ALT',
+            9200: 'Elasticsearch',
+            27017: 'MongoDB',
+            27018: 'MongoDB'
         }
         return service_map.get(port, f'Port {port}')
     

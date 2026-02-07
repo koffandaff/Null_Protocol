@@ -81,12 +81,23 @@ class Router {
         const route = this.routes[path] || this.routes['/login'];
 
         if (!route) {
-            this.navigate('/');
+            // Load custom 404 page
+            try {
+                const response = await fetch('/404.html');
+                if (response.ok) {
+                    this.app.innerHTML = await response.text();
+                } else {
+                    this.app.innerHTML = '<h1 style="color:red;text-align:center;margin-top:20%">404 - Page Not Found</h1>';
+                }
+            } catch (e) {
+                this.app.innerHTML = '<h1 style="color:red;text-align:center;margin-top:20%">404 - Page Not Found</h1>';
+            }
             return;
         }
 
         if (route.requiresAuth && !Auth.isAuthenticated()) {
-            this.navigate('/login');
+            // User requested improvement: Redirect to Home instead of Login
+            this.navigate('/');
             return;
         }
 

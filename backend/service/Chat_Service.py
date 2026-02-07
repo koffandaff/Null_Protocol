@@ -24,8 +24,13 @@ class ChatService:
     
     async def check_ollama_health(self) -> Dict[str, bool]:
         """Check if Ollama is running and the specific model is available"""
+        if not self.ollama_url:
+            return {"connected": False, "model_available": False}
+            
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            # Add Host header to bypass Ngrok/Ollama browser checks
+            headers = {"Host": "localhost:11434"}
+            async with httpx.AsyncClient(timeout=5.0, headers=headers) as client:
                 response = await client.get(f"{self.ollama_url}/api/tags")
                 if response.status_code != 200:
                     return {"connected": False, "model_available": False}
@@ -62,7 +67,9 @@ class ChatService:
         full_response = ""
         
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            # Add Host header here too
+            headers = {"Host": "localhost:11434"}
+            async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
                 async with client.stream(
                     "POST",
                     f"{self.ollama_url}/api/chat",

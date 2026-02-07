@@ -61,8 +61,16 @@ class Api {
                         const newHeaders = { ...headers };
                         newHeaders['Authorization'] = `Bearer ${refreshResponse.access_token}`;
 
-                        // Retry original request with new config
-                        const retryConfig = { ...config, headers: newHeaders };
+                        // Retry original request with new config (mark as retry)
+                        const retryConfig = { ...config, headers: newHeaders, _isRetry: true };
+
+                        // Prevent infinite recursion if retry fails again
+                        if (config._isRetry) {
+                            console.error('Retry failed after refresh. Logging out.');
+                            this.handleLogout();
+                            return null;
+                        }
+
                         const retryResponse = await fetch(`${API_URL}${endpoint}`, retryConfig);
 
                         if (retryResponse.status === 401) {

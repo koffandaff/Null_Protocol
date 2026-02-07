@@ -102,7 +102,9 @@ class DashboardView {
 
     async loadSystemStatus() {
         try {
-            const response = await fetch('http://localhost:8000/status');
+            // Use Api.baseUrl to derive root URL (remove /api suffix)
+            const rootUrl = Api.baseUrl.replace(/\/api$/, '');
+            const response = await fetch(`${rootUrl}/status`);
             const statusData = await response.json();
 
             if (statusData.system) {
@@ -132,10 +134,10 @@ class DashboardView {
             this.loadSystemStatus();
         }, 5000));
 
-        // Stats - refresh every 30 seconds
+        // Stats - refresh every 60 seconds
         this.intervals.push(setInterval(() => {
             this.loadStats();
-        }, 30000));
+        }, 60000));
 
         // Cleanup on navigation
         window.addEventListener('hashchange', () => this.stopLiveUpdates(), { once: true });

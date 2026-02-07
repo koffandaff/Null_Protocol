@@ -34,15 +34,11 @@ cryptography
 # Network Tools
 dnspython
 python-whois
-python-nmap
-
-
-# File Analysis
 python-magic
+email-validator
+cryptography
+python-nmap
 # yara-python  # Disabled: requires C compiler on Linux
 
 # Email (for OTP)
-aiosmtplib
-
-# Validation
 email-validator

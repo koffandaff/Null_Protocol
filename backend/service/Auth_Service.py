@@ -204,34 +204,46 @@ class AuthService:
             }
         }
     
+    
     def refresh_access_token(self, refresh_token: str) -> Optional[str]:
         """Refresh access token using refresh token"""
-        print(refresh_token)
-        payload = self.verify_token(refresh_token, 'refresh')
-        if not payload:
+        try:
+            # Handle restart/stateless cases where token might be valid but not in DB (if using JWT only)
+            # But here we enforce DB check for security (revoke capability)
+            
+            payload = self.verify_token(refresh_token, 'refresh')
+            if not payload:
+                print(" [AUTH] Refresh failed: Invalid token payload")
+                return None
+            
+            user_id = payload.get('sub')
+            if not user_id:
+                return None
+            
+            # Verify stored token matches
+            stored_token = self.user_repo.get_refresh_token(user_id)
+            
+            # Allow for some leeway or re-login if DB has no token but JWT is valid (optional, but strict is better)
+            if not stored_token or stored_token != refresh_token:
+                print(f" [AUTH] Refresh failed: Token mismatch for user {user_id}")
+                return None
+            
+            user = self.user_repo.get_by_id(user_id)
+            if not user:
+                return None
+            
+            # Create new access token
+            payload_access_token = {
+                'sub': user.id, 
+                'email': user.email,
+                'role': user.role or 'user'
+            }
+            new_access_token = self.create_access_token(payload_access_token)
+            return new_access_token
+            
+        except Exception as e:
+            print(f" [AUTH] Refresh error: {str(e)}")
             return None
-        
-        user_id = payload.get('sub')
-        if not user_id:
-            return None
-        
-        # Verify stored token matches
-        stored_token = self.user_repo.get_refresh_token(user_id)
-        if stored_token != refresh_token:
-            return None
-        
-        user = self.user_repo.get_by_id(user_id)
-        if not user:
-            return None
-        
-        # Create new access token
-        payload_access_token = {
-            'sub': user.id, 
-            'email': user.email,
-            'role': user.role or 'user'
-        }
-        new_access_token = self.create_access_token(payload_access_token)
-        return new_access_token
     
     def logout(self, user_id: str, refresh_token: str):
         """Logout user by deleting refresh token"""

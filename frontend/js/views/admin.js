@@ -748,7 +748,9 @@ class AdminView {
     async loadSystemInfo() {
         try {
             // /status is at root level, not under /api
-            const response = await fetch('http://localhost:8000/status');
+            // Use Api.baseUrl to derive root URL (remove /api suffix)
+            const rootUrl = Api.baseUrl.replace(/\/api$/, '');
+            const response = await fetch(`${rootUrl}/status`);
             const status = await response.json();
             const container = document.getElementById('system-info');
 
