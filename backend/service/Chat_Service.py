@@ -124,21 +124,19 @@ Your Role:
                                     yield json.dumps({"content": content, "type": "token"})
                                 
                                 if data.get("done", False):
+                                    # SAVE BEFORE YIELDING DONE to prevent race condition
+                                    if full_response:
+                                        self.db.add_message(session_id, user_id, "assistant", full_response)
+                                        # Log chat activity
+                                        self.activity_repo.log_activity(
+                                            user_id=user_id,
+                                            action='chat',
+                                            details={'session_id': session_id, 'length': len(full_response)}
+                                        )
+                                        full_response = "" # Prevent double saving
+                                        
                                     yield json.dumps({"type": "done"})
                                     break
-                                    
-                            except json.JSONDecodeError:
-                                continue
-                
-                # Save assistant response to database
-                if full_response:
-                    self.db.add_message(session_id, user_id, "assistant", full_response)
-                    # Log chat activity
-                    self.activity_repo.log_activity(
-                        user_id=user_id,
-                        action='chat',
-                        details={'session_id': session_id, 'length': len(full_response)}
-                    )
                     
         except httpx.TimeoutException:
             yield json.dumps({"error": "Ollama request timed out. The model is taking too long to respond."})
