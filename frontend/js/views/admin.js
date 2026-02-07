@@ -778,8 +778,10 @@ class AdminView {
                         <div style="font-size: 1rem; color: var(--primary); font-family: 'JetBrains Mono';">● Online</div>
                     </div>
                     <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
-                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Ollama Status</div>
-                        <div style="font-size: 1rem; color: ${status.ai_available ? 'var(--primary)' : '#ff4757'}; font-family: 'JetBrains Mono';">● ${status.ai_available ? 'Connected' : 'Disconnected'}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">AI Status</div>
+                        <div style="font-size: 1rem; color: ${status.ai_available ? 'var(--primary)' : '#ff4757'}; font-family: 'JetBrains Mono';">
+                            ● ${status.ai_available ? 'Connected' : 'Offline'}
+                        </div>
                     </div>
                 `;
             }

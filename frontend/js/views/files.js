@@ -368,47 +368,56 @@ class FileView {
                 return;
             }
 
-            // Show uploading status
-            uploadStatus.style.display = 'block';
-            statusIcon.innerHTML = '<span class="material-symbols-outlined" style="color: var(--secondary); animation: spin 1s linear infinite;">progress_activity</span>';
-            statusText.textContent = `Uploading ${fileInput.files[0].name}...`;
-            statusDetail.textContent = 'Analyzing file for threats';
             analyzeBtn.disabled = true;
             analyzeBtn.textContent = 'ANALYZING...';
+            uploadStatus.style.display = 'block';
 
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            // Process files sequentially
+            for (let i = 0; i < fileInput.files.length; i++) {
+                const file = fileInput.files[i];
 
-            try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch(`${Api.baseUrl}/files/upload/analyze?use_virustotal=${useVT}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
+                // Update status for current file
+                statusIcon.innerHTML = '<span class="material-symbols-outlined" style="color: var(--secondary); animation: spin 1s linear infinite;">progress_activity</span>';
+                statusText.textContent = `Analyzing ${file.name}...`;
+                statusDetail.textContent = `File ${i + 1} of ${fileInput.files.length}`;
+                uploadStatus.style.borderColor = 'var(--secondary)';
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || 'Upload failed');
+                const formData = new FormData();
+                formData.append('file', file);
 
-                // Show success status
-                statusIcon.innerHTML = '<span class="material-symbols-outlined" style="color: var(--primary);">check_circle</span>';
-                statusText.textContent = 'Analysis Complete';
-                statusDetail.textContent = `${fileInput.files[0].name} processed successfully`;
-                uploadStatus.style.borderColor = 'var(--primary)';
+                try {
+                    const token = localStorage.getItem('access_token');
+                    const response = await fetch(`${Api.baseUrl}/files/upload/analyze?use_virustotal=${useVT}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
 
-                this.displayResults(data, 'file');
-                Utils.showToast('File analysis complete', 'success');
-            } catch (error) {
-                // Show error status
-                statusIcon.innerHTML = '<span class="material-symbols-outlined" style="color: #ff4757;">error</span>';
-                statusText.textContent = 'Analysis Failed';
-                statusDetail.textContent = error.message;
-                uploadStatus.style.borderColor = '#ff4757';
-                Utils.showToast(error.message, 'error');
-            } finally {
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = 'START ANALYSIS';
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.detail || 'Upload failed');
+
+                    // Display results for this file (append or replace? For now replace to assume single view focus, but could accumulate)
+                    // Since the UI design seems single-result focused, we'll display the last one or append to a list.
+                    // Implementation plan implies "Show list", but let's stick to displayResults for now. 
+                    // To handle multiple, we might need a results list, but for now let's just show the last one's detailed result 
+                    // and maybe toast success for each.
+
+                    this.displayResults(data, 'file');
+                    Utils.showToast(`${file.name} analysis complete`, 'success');
+
+                } catch (error) {
+                    Utils.showToast(`${file.name} failed: ${error.message}`, 'error');
+                }
             }
+
+            // Final status update
+            statusIcon.innerHTML = '<span class="material-symbols-outlined" style="color: var(--primary);">check_circle</span>';
+            statusText.textContent = 'Batch Analysis Complete';
+            statusDetail.textContent = `Processed ${fileInput.files.length} files`;
+            uploadStatus.style.borderColor = 'var(--primary)';
+
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = 'START ANALYSIS';
         });
     }
 

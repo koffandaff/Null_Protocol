@@ -50,14 +50,17 @@ class HistoryView {
 
     async loadHistory() {
         try {
-            const result = await Api.get('/scans/user/history');
             const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center;">Loading history...</td></tr>';
+
+            const result = await Api.get('/scans/user/history');
+
             if (result && result.scans && result.scans.length > 0) {
                 tbody.innerHTML = result.scans.map(scan => `
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding: 1rem;"><span style="text-transform: capitalize;">${scan.scan_type}</span></td>
-                        <td style="padding: 1rem;">${scan.target}</td>
-                        <td style="padding: 1rem;"><span style="color: ${this.getStatusColor(scan.status)}">${scan.status}</span></td>
+                        <td style="padding: 1rem;"><span style="text-transform: capitalize;">${Utils.escapeHtml(scan.scan_type)}</span></td>
+                        <td style="padding: 1rem;">${Utils.escapeHtml(scan.target)}</td>
+                        <td style="padding: 1rem;"><span style="color: ${this.getStatusColor(scan.status)}">${Utils.escapeHtml(scan.status)}</span></td>
                         <td style="padding: 1rem; font-size: 0.8rem;">${Utils.parseDate(scan.started_at)}</td>
                         <td style="padding: 1rem;"><button class="btn-outline view-result-btn" data-id="${scan.id}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">VIEW</button></td>
                     </tr>
@@ -68,14 +71,21 @@ class HistoryView {
                         const id = e.target.getAttribute('data-id');
                         try {
                             const scanData = await Api.get(`/scans/${id}`);
-                            document.getElementById('modal-title').textContent = `Report: ${scanData.scan_type.toUpperCase()} - ${scanData.target}`;
+                            document.getElementById('modal-title').textContent = `Report: ${(scanData.scan_type || 'unknown').toUpperCase()} - ${scanData.target}`;
                             document.getElementById('modal-content').innerHTML = this.renderScanReport(scanData);
                             document.getElementById('result-modal').style.display = 'block';
                         } catch (err) { Utils.showToast(err.message, 'error'); }
                     });
                 });
-            } else { tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center;">No history found.</td></tr>'; }
-        } catch (error) { Utils.showToast('Failed to load history', 'error'); }
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center;">No history found.</td></tr>';
+            }
+        } catch (error) {
+            console.error('Load history error:', error);
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 2rem; text-align: center; color: var(--danger);">Failed to load history: ${error.message}</td></tr>`;
+            Utils.showToast('Failed to load history', 'error');
+        }
     }
 
     renderScanReport(scanData) {

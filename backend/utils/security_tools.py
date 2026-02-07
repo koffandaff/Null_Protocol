@@ -481,6 +481,19 @@ class SecurityTools:
             SecurityHeader.PERMISSIONS_POLICY: {
                 'recommendation': 'Configure Permissions-Policy to limit browser features',
                 'risk': RiskLevel.MEDIUM
+            },
+            # New Headers
+            SecurityHeader.CROSS_ORIGIN_OPENER_POLICY: {
+                'recommendation': 'Set Cross-Origin-Opener-Policy to same-origin',
+                'risk': RiskLevel.LOW
+            },
+            SecurityHeader.CROSS_ORIGIN_EMBEDDER_POLICY: {
+                'recommendation': 'Set Cross-Origin-Embedder-Policy to require-corp',
+                'risk': RiskLevel.LOW
+            },
+            SecurityHeader.CROSS_ORIGIN_RESOURCE_POLICY: {
+                'recommendation': 'Set Cross-Origin-Resource-Policy to same-site or same-origin',
+                'risk': RiskLevel.LOW
             }
         }
         

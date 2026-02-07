@@ -9,6 +9,15 @@ class Utils {
             .replace(/'/g, "&#039;");
     }
 
+    static formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
     static showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -51,7 +60,12 @@ class Utils {
     }
 
     static parseDate(isoString) {
-        return new Date(isoString).toLocaleString();
+        if (!isoString) return 'N/A';
+        try {
+            return new Date(isoString).toLocaleString();
+        } catch (e) {
+            return 'Invalid Date';
+        }
     }
 
     static renderMarkdown(text) {

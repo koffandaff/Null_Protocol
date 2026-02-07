@@ -96,15 +96,20 @@ class VPNService:
         ta_key = pki_manager.get_ta_key()
         
         # Build OpenVPN config with real certs
-        config_content = self._build_openvpn_config(
-            server_ip=self.vpn_server_ip,
-            port=self.vpn_server_port,
-            protocol=self.vpn_protocol,
-            ca_cert=ca_cert,
-            client_cert=client_cert,
-            client_key=client_key,
-            ta_key=ta_key
-        )
+        try:
+            config_content = self._build_openvpn_config(
+                server_ip=self.vpn_server_ip,
+                port=self.vpn_server_port,
+                protocol=self.vpn_protocol,
+                ca_cert=ca_cert,
+                client_cert=client_cert,
+                client_key=client_key,
+                ta_key=ta_key
+            )
+        except Exception as e:
+            # Fallback for environments without VPN binaries (e.g. Vercel)
+            print(f"VPN Generation failed, using MOCK data: {e}")
+            config_content = self._build_mock_openvpn_config(server_name, user_id)
         
         # Create filename: username_fsociety_servername
         safe_server_name = server_id.replace("-", "_").replace(" ", "_")

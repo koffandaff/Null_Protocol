@@ -49,7 +49,10 @@ class ScanView {
                                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">TARGET: <span id="report-target" style="color: var(--primary);">N/A</span> | <span id="report-date">DATE</span></div>
                             </div>
                             <div class="result-actions" style="display: flex; gap: 0.8rem;">
-                                <button class="btn-sm" style="background: var(--primary); color: black;" onclick="downloadPDF()">GENERATE PDF</button>
+                                <button class="btn-sm" style="background: var(--primary); color: black; display: flex; align-items: center; gap: 0.5rem;" onclick="downloadPDF()">
+                                    <span class="material-symbols-outlined" style="font-size: 1.1rem;">picture_as_pdf</span>
+                                    GENERATE PDF
+                                </button>
                                 <button class="btn-outline btn-sm" onclick="document.querySelector('[data-tab=raw]').click()">RAW JSON</button>
                             </div>
                         </div>

@@ -293,9 +293,6 @@ class PhishingTools:
         # 6. Non-standard Port
         is_non_standard_port = self._has_non_standard_port(url)
         indicators.append({
-            'indicator': PhishingIndicator.NON_STANDARD_PORT,
-            'present': is_non_standard_port,
-            'score': 0.6 if is_non_standard_port else 0.0,
             'details': "Uses non-standard web service port" if is_non_standard_port else None
         })
         
@@ -306,6 +303,15 @@ class PhishingTools:
             'present': not has_https,
             'score': 0.5 if not has_https else 0.0,
             'details': "Insecure connection detected" if not has_https else None
+        })
+
+        # 8. Punycode / Homograph Attack Detection
+        is_punycode = 'xn--' in domain
+        indicators.append({
+            'indicator': PhishingIndicator.PUNYCODE_DETECTED,
+            'present': is_punycode,
+            'score': 0.8 if is_punycode else 0.0,
+            'details': "Punycode detected - potentially a homograph attack" if is_punycode else None
         })
         
         return indicators
@@ -402,14 +408,15 @@ class PhishingTools:
         """Get weight for an indicator based on importance (0.0 - 1.0)"""
         # Weights determine how much an individual factor contributes to the total 1.0 cap
         weights = {
-            PhishingIndicator.HTTPS_MISSING: 0.3,     # Base penalty for HTTP
-            PhishingIndicator.IP_IN_URL: 0.8,         # Very high indicator
-            PhishingIndicator.SUSPICIOUS_TLD: 0.4,    # Moderate
-            PhishingIndicator.SUSPICIOUS_KEYWORD: 0.4, # Moderate
-            PhishingIndicator.SHORTENED_URL: 0.3,     # Contextual
-            PhishingIndicator.LONG_URL: 0.1,          # Weak indicator
-            PhishingIndicator.NON_STANDARD_PORT: 0.2, # Contextual
-            PhishingIndicator.SHORT_DOMAIN_AGE: 0.2   # Contextual
+            PhishingIndicator.HTTPS_MISSING: 0.45,    # Increased penalty
+            PhishingIndicator.IP_IN_URL: 0.85,        # Critical indicator
+            PhishingIndicator.SUSPICIOUS_TLD: 0.5,    # Increased
+            PhishingIndicator.SUSPICIOUS_KEYWORD: 0.4, 
+            PhishingIndicator.SHORTENED_URL: 0.35,    
+            PhishingIndicator.LONG_URL: 0.15,          
+            PhishingIndicator.NON_STANDARD_PORT: 0.3, # Increased
+            PhishingIndicator.SHORT_DOMAIN_AGE: 0.25,
+            PhishingIndicator.PUNYCODE_DETECTED: 0.8  # New critical indicator
         }
         
         return weights.get(indicator, 0.2)
