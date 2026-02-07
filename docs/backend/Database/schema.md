@@ -55,9 +55,19 @@ erDiagram
         string email UK
         string username UK
         text password_hash
+        text refresh_token
+        datetime refresh_token_expires_at
+        string full_name
+        string phone
+        string company
+        text bio
         string role
         boolean is_active
         datetime created_at
+        datetime updated_at
+        datetime last_login_at
+        string last_login_ip
+        datetime password_changed_at
     }
 
     USER_STATS {
@@ -65,35 +75,30 @@ erDiagram
         int total_scans
         int phishing_checks
         int security_scans
+        int file_analysis
+        int vpn_configs
+        int reports_generated
+        int malware_detected
+        datetime last_active
     }
 
-    ACTIVITY_LOGS {
+    VPN_CONFIGS {
         string id PK
         string user_id FK
-        string action
-        json details
-        datetime timestamp
+        string server_id FK
+        string config_type
+        string filename
+        text config_content
+        datetime created_at
     }
 
-    NETWORK_SCANS {
+    VPN_SERVERS {
         string id PK
-        string user_id FK
-        string scan_type
-        string target
-        json results
-    }
-
-    CHAT_SESSIONS {
-        string id PK
-        string user_id FK
-        string title
-    }
-
-    CHAT_MESSAGES {
-        string id PK
-        string session_id FK
-        string role
-        text content
+        string name
+        string address
+        string region
+        boolean is_online
+        string current_load
     }
 ```
 
@@ -109,7 +114,7 @@ The central table storing user accounts.
 | id | VARCHAR(36) | PK | UUID |
 | email | VARCHAR(255) | UNIQUE, NOT NULL | User email |
 | username | VARCHAR(50) | UNIQUE, NOT NULL | Username |
-| password_hash | TEXT | NOT NULL | bcrypt hash |
+| password_hash | TEXT | NOT NULL | Hashed password |
 | refresh_token | TEXT | NULL | JWT refresh token |
 | refresh_token_expires_at | DATETIME | NULL | Token expiry |
 | full_name | VARCHAR(100) | NULL | Display name |
@@ -158,6 +163,7 @@ Results from network scanning operations.
 | Column | Type | Description |
 |--------|------|-------------|
 | id | VARCHAR(36) | PK |
+| scan_number | INTEGER | Human readable ID |
 | user_id | VARCHAR(36) | FK → users.id |
 | scan_type | VARCHAR(30) | Type: port, service, os_detect |
 | target | VARCHAR(255) | IP or hostname |
@@ -203,20 +209,101 @@ Individual messages within chat sessions.
 | content | TEXT | Message content |
 | timestamp | DATETIME | When sent |
 
-### 8-9. footprint_scans & footprint_findings
-Digital footprint OSINT results.
+### 8. footprint_scans
+OSINT investigation snapshots.
 
-### 10-11. vpn_servers & vpn_configs
-VPN server list and user configurations.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | PK |
+| user_id | VARCHAR(36) | FK → users.id |
+| email_scanned | VARCHAR(255) | |
+| username_scanned | VARCHAR(50) | |
+| phone_scanned | VARCHAR(20) | |
+| platforms_checked | JSON | |
+| score | INTEGER | 0-100 |
+| status | VARCHAR(20) | |
+| progress | INTEGER | 0-100 |
+| recommendations | JSON | |
+| error_message | TEXT | |
+| started_at | DATETIME | |
+| completed_at | DATETIME | |
+
+### 9. footprint_findings
+Individual OSINT findings.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | PK |
+| scan_id | VARCHAR(36) | FK → footprint_scans.id |
+| category | VARCHAR(50) | social, leak, etc. |
+| source | VARCHAR(50) | Twitter, LinkedIn, etc. |
+| severity | VARCHAR(20) | |
+| title | VARCHAR(255) | |
+| description | TEXT | |
+| url | TEXT | |
+| found_at | DATETIME | |
+
+### 10. vpn_servers
+Available VPN nodes.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(50) | PK |
+| name | VARCHAR(100) | |
+| address | VARCHAR(255) | |
+| region | VARCHAR(50) | |
+| is_online | BOOLEAN | |
+| current_load | VARCHAR(10) | |
+
+### 11. vpn_configs
+Generated VPN profiles.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | PK |
+| user_id | VARCHAR(36) | FK → users.id |
+| server_id | VARCHAR(50) | FK → vpn_servers.id |
+| config_type | VARCHAR(20) | |
+| filename | VARCHAR(255) | |
+| config_content | TEXT | |
+| created_at | DATETIME | |
 
 ### 12. malware_scans
-File analysis and malware detection results.
+File analysis results.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | PK |
+| user_id | VARCHAR(36) | FK → users.id |
+| filename | VARCHAR(255) | |
+| file_hash | VARCHAR(64) | |
+| risk_level | VARCHAR(20) | |
+| is_malicious | BOOLEAN | |
+| results | JSON | |
+| created_at | DATETIME | |
 
 ### 13. reports
-Generated PDF reports.
+Generated PDF documents.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | PK |
+| user_id | VARCHAR(36) | FK → users.id |
+| title | VARCHAR(255) | |
+| report_type | VARCHAR(50) | |
+| file_path | TEXT | |
+| created_at | DATETIME | |
 
 ### 14. password_reset_tokens
-OTP tokens for password recovery.
+OTP tokens for recovery.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | PK |
+| user_id | VARCHAR(36) | FK → users.id |
+| token_hash | VARCHAR(255) | |
+| expires_at | DATETIME | |
+| created_at | DATETIME | |
 
 ---
 

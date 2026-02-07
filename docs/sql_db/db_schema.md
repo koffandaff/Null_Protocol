@@ -1,10 +1,10 @@
 # Fsociety SQL Database Schema
 
-This document outlines the proposed SQL schema for the Fsociety platform, transitioning from the current in-memory/JSON implementation to a robust relational database (PostgreSQL recommended).
+This document outlines the current SQL schema for the Fsociety platform. The database uses SQLite locally and is designed to be compatible with PostgreSQL for production.
 
 ## Overview
 
-The database design follows a normalized structure to ensure data integrity, scalability, and performance. We use UUIDs as primary keys for all entities to avoid enumeration attacks and simplify distributed system integration.
+The database design follows a normalized structure with UUIDs (String(36)) as primary keys for all major entities.
 
 ## Table Definitions
 
@@ -13,47 +13,32 @@ Stores user profiles, authentication state, and session tokens.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | Unique identifier |
+| `id` | VARCHAR(36) | PRIMARY KEY | Unique identifier (UUID) |
 | `email` | VARCHAR(255) | UNIQUE, NOT NULL | User's email |
 | `username` | VARCHAR(50) | UNIQUE, NOT NULL | User's handle |
-| `password_hash` | TEXT | NOT NULL | Argon2/BCrypt hashed password |
+| `password_hash` | TEXT | NOT NULL | Hashed password |
 | `refresh_token` | TEXT | | Current active refresh token |
-| `refresh_token_expires_at` | TIMESTAMP | | Expiration timestamp for session |
+| `refresh_token_expires_at` | DATETIME | | Expiration timestamp for session |
 | `full_name` | VARCHAR(100) | | Optional full name |
 | `phone` | VARCHAR(20) | | Optional contact |
 | `company` | VARCHAR(100) | | Optional organization |
-| `bio` | TEXT | | Optional biography (max 500 chars) |
+| `bio` | TEXT | | Optional biography |
 | `role` | VARCHAR(20) | DEFAULT 'user' | 'admin' or 'user' |
-| `is_active` | BOOLEAN | DEFAULT TRUE | Account status (Admin can disable) |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Record creation time |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() | Last profile update |
-| `last_login_at` | TIMESTAMP | | Last time user logged in |
-| `last_login_ip` | INET | | IP of last login |
-| `password_changed_at` | TIMESTAMP | | Last password rotate time |
+| `is_active` | BOOLEAN | DEFAULT TRUE | Account status |
+| `created_at` | DATETIME | DEFAULT NOW() | Record creation time |
+| `updated_at` | DATETIME | DEFAULT NOW() | Last profile update |
+| `last_login_at` | DATETIME | | Last time user logged in |
+| `last_login_ip` | VARCHAR(45) | | IP of last login (IPv6 compatible) |
+| `password_changed_at` | DATETIME | | Last password rotate time |
 
 ---
 
-### 2. Activity Logs (`activity_logs`)
-Records all audit-able events in the system for the Live Activity Feed.
-
-| Column | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | Unique ID |
-| `user_id` | UUID | FK -> users(id), ON DELETE SET NULL | User who performed action |
-| `action` | VARCHAR(50) | NOT NULL | 'login', 'scan', 'vpn', etc. |
-| `details` | JSONB | | Context-specific JSON data |
-| `ip_address` | INET | | IP of the requester |
-| `user_agent` | TEXT | | Client user agent |
-| `timestamp` | TIMESTAMP | DEFAULT NOW() | Event time |
-
----
-
-### 3. User Statistics (`user_stats`)
+### 2. User Statistics (`user_stats`)
 Aggregated metrics for dashboard and health monitoring.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `user_id` | UUID | PRIMARY KEY, FK -> users(id) | Owner |
+| `user_id` | VARCHAR(36) | PRIMARY KEY, FK -> users(id) | Owner |
 | `total_scans` | INTEGER | DEFAULT 0 | Network scans count |
 | `phishing_checks` | INTEGER | DEFAULT 0 | |
 | `security_scans` | INTEGER | DEFAULT 0 | SSL/Header scans |
@@ -61,113 +46,125 @@ Aggregated metrics for dashboard and health monitoring.
 | `vpn_configs` | INTEGER | DEFAULT 0 | |
 | `reports_generated` | INTEGER | DEFAULT 0 | |
 | `malware_detected` | INTEGER | DEFAULT 0 | Count of malicious findings |
-| `last_active` | TIMESTAMP | | Last activity timestamp |
+| `last_active` | DATETIME | | Last activity timestamp |
 
 ---
 
-### 5. Network Scans (`network_scans`)
+### 3. Activity Logs (`activity_logs`)
+Records all audit-able events in the system.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | VARCHAR(36) | PRIMARY KEY | Unique ID |
+| `user_id` | VARCHAR(36) | FK -> users(id), ON DELETE SET NULL | User who performed action |
+| `action` | VARCHAR(50) | NOT NULL | 'login', 'scan', 'vpn', etc. |
+| `details` | JSON | | Context-specific JSON data |
+| `ip_address` | VARCHAR(45) | | IP of the requester |
+| `user_agent` | TEXT | | Client user agent |
+| `timestamp` | DATETIME | DEFAULT NOW() | Event time |
+
+---
+
+### 4. Network Scans (`network_scans`)
 Stores results of port scans, DNS, Subdomains, etc.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | Unique ID |
-| `scan_number` | SERIAL | | Human readable scan ID |
-| `user_id` | UUID | FK -> users(id), ON DELETE CASCADE | Scanned by |
+| `id` | VARCHAR(36) | PRIMARY KEY | Unique ID |
+| `scan_number` | INTEGER | | Auto-incrementing human readable ID |
+| `user_id` | VARCHAR(36) | FK -> users(id), ON DELETE CASCADE | Scanned by |
 | `scan_type` | VARCHAR(30) | NOT NULL | 'domain', 'ip', 'ports', etc. |
 | `target` | VARCHAR(255) | NOT NULL | The domain/IP scanned |
 | `status` | VARCHAR(20) | DEFAULT 'pending' | 'completed', 'failed', 'running' |
-| `results` | JSONB | | Raw output from scanner tools |
+| `results` | JSON | | Raw output from scanner tools |
 | `error` | TEXT | | Error message if failed |
-| `started_at` | TIMESTAMP | DEFAULT NOW() | Start time |
-| `completed_at` | TIMESTAMP | | End time |
+| `started_at` | DATETIME | DEFAULT NOW() | Start time |
+| `completed_at` | DATETIME | | End time |
 | `duration_ms` | INTEGER | | Execution time in ms |
 
 ---
 
-### 6. Security Scans (`security_scans`)
+### 5. Security Scans (`security_scans`)
 Specialized scans like SSL, HTTP Headers, and Phishing.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | Unique ID |
-| `user_id` | UUID | FK -> users(id) | Scanned by |
+| `id` | VARCHAR(36) | PRIMARY KEY | Unique ID |
+| `user_id` | VARCHAR(36) | FK -> users(id) | Scanned by |
 | `category` | VARCHAR(30) | NOT NULL | 'ssl', 'headers', 'phishing' |
 | `target` | TEXT | NOT NULL | URL or Domain |
 | `risk_level` | VARCHAR(20) | | 'low', 'medium', 'high', 'critical' |
-| `results` | JSONB | | Detailed scan results |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | Scan time |
+| `results` | JSON | | Detailed scan results |
+| `created_at` | DATETIME | DEFAULT NOW() | Scan time |
 
 ---
 
-### 7. Chat Sessions & Messages
-Relational storage for AI interactions.
+### 6. Chat Sessions (`chat_sessions`)
+AI conversation metadata.
 
-#### Table: `chat_sessions`
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | Unique ID |
-| `user_id` | UUID | FK -> users(id), ON DELETE CASCADE | Owner |
-| `title` | VARCHAR(100) | DEFAULT 'New Chat' | User-provided or auto-generated |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | |
-| `updated_at` | TIMESTAMP | DEFAULT NOW() | |
+| `id` | VARCHAR(36) | PRIMARY KEY | Unique ID |
+| `user_id` | VARCHAR(36) | FK -> users(id), ON DELETE CASCADE | Owner |
+| `title` | VARCHAR(100) | DEFAULT 'New Chat' | Auto-generated title |
+| `created_at` | DATETIME | DEFAULT NOW() | |
+| `updated_at` | DATETIME | DEFAULT NOW() | |
 
-#### Table: `chat_messages`
+---
+
+### 7. Chat Messages (`chat_messages`)
+Individual messages in AI sessions.
+
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | |
-| `session_id` | UUID | FK -> chat_sessions(id), ON DELETE CASCADE | Parent session |
+| `id` | VARCHAR(36) | PRIMARY KEY | |
+| `session_id` | VARCHAR(36) | FK -> chat_sessions(id), ON DELETE CASCADE | Parent session |
 | `role` | VARCHAR(20) | NOT NULL | 'user' or 'assistant' |
-| `content` | TEXT | NOT NULL | The actual message |
-| `timestamp` | TIMESTAMP | DEFAULT NOW() | |
+| `content` | TEXT | NOT NULL | Message content |
+| `timestamp` | DATETIME | DEFAULT NOW() | |
 
 ---
 
-### 8. Digital Footprint
-Tracking OSINT findings.
+### 8. Footprint Scans (`footprint_scans`)
+OSINT investigation snapshots.
 
-#### Table: `footprint_scans`
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | |
-| `user_id` | UUID | FK -> users(id) | |
+| `id` | VARCHAR(36) | PRIMARY KEY | |
+| `user_id` | VARCHAR(36) | FK -> users(id) | |
 | `email_scanned` | VARCHAR(255) | | |
 | `username_scanned` | VARCHAR(50) | | |
-| `score` | INTEGER | 0-100 | Risk score |
-| `status` | VARCHAR(20) | | |
-| `started_at` | TIMESTAMP | | |
-| `completed_at` | TIMESTAMP | | |
+| `phone_scanned` | VARCHAR(20) | | |
+| `platforms_checked` | JSON | | |
+| `score` | INTEGER | DEFAULT 100 | Risk score |
+| `status` | VARCHAR(20) | DEFAULT 'pending' | |
+| `progress` | INTEGER | DEFAULT 0 | |
+| `recommendations` | JSON | | |
+| `error_message` | TEXT | | |
+| `started_at` | DATETIME | | |
+| `completed_at` | DATETIME | | |
 
-#### Table: `footprint_findings`
+---
+
+### 9. Footprint Findings (`footprint_findings`)
+Individual OSINT data points.
+
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | |
-| `scan_id` | UUID | FK -> footprint_scans(id), ON DELETE CASCADE | |
+| `id` | VARCHAR(36) | PRIMARY KEY | |
+| `scan_id` | VARCHAR(36) | FK -> footprint_scans(id), ON DELETE CASCADE | |
 | `category` | VARCHAR(50) | | e.g., 'social_media' |
 | `source` | VARCHAR(50) | | e.g., 'Twitter' |
 | `severity` | VARCHAR(20) | | |
 | `title` | VARCHAR(255) | | |
 | `description` | TEXT | | |
 | `url` | TEXT | | |
-| `found_at` | TIMESTAMP | | |
-
----
-
-### 9. Malware/File Analysis (`malware_scans`)
-| Column | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | |
-| `user_id` | UUID | FK -> users(id) | |
-| `filename` | VARCHAR(255) | | |
-| `file_hash` | VARCHAR(64) | NOT NULL | SHA256 usually |
-| `risk_level` | VARCHAR(20) | | |
-| `is_malicious` | BOOLEAN | | |
-| `results` | JSONB | | Full info (Virustotal, details) |
-| `created_at` | TIMESTAMP | | |
+| `found_at` | DATETIME | | |
 
 ---
 
 ### 10. VPN Servers (`vpn_servers`)
-Manageable server list for the VPN gateway.
+Nodes available for tunnel connection.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
@@ -181,61 +178,69 @@ Manageable server list for the VPN gateway.
 ---
 
 ### 11. VPN Configurations (`vpn_configs`)
-Generated configuration files for users.
+User-specific profile files.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | |
-| `user_id` | UUID | FK -> users(id) | |
+| `id` | VARCHAR(36) | PRIMARY KEY | |
+| `user_id` | VARCHAR(36) | FK -> users(id) | |
 | `server_id` | VARCHAR(50) | FK -> vpn_servers(id) | |
-| `config_type` | VARCHAR(20) | | 'openvpn' |
+| `config_type` | VARCHAR(20) | | 'openvpn' or 'wireguard' |
 | `filename` | VARCHAR(255) | | |
-| `config_content` | TEXT | | The generated config file |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | |
+| `config_content` | TEXT | | The actual config data |
+| `created_at` | DATETIME | DEFAULT NOW() | |
 
 ---
 
-### 12. Reports (`reports`)
-Generated PDF/HTML reports for security audits.
+### 12. Malware Scans (`malware_scans`)
+File analysis results.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY | |
-| `user_id` | UUID | FK -> users(id) | |
-| `title` | VARCHAR(255) | | |
-| `report_type` | VARCHAR(50) | | 'comprehensive', 'scan_summary' |
-| `file_path` | TEXT | | Path to stored report |
-| `created_at` | TIMESTAMP | DEFAULT NOW() | |
+| `id` | VARCHAR(36) | PRIMARY KEY | |
+| `user_id` | VARCHAR(36) | FK -> users(id) | |
+| `filename` | VARCHAR(255) | | |
+| `file_hash` | VARCHAR(64) | NOT NULL | |
+| `risk_level` | VARCHAR(20) | | |
+| `is_malicious` | BOOLEAN | | |
+| `results` | JSON | | Full detailed report |
+| `created_at` | DATETIME | | |
 
 ---
 
-## JSONB Structure Reference
+### 13. Reports (`reports`)
+Generated audit documents.
 
-To maintain flexibility across diverse scanner outputs, several columns use `JSONB`. Below are the expected structures for these fields.
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | VARCHAR(36) | PRIMARY KEY | |
+| `user_id` | VARCHAR(36) | FK -> users(id) | |
+| `title` | VARCHAR(255) | | |
+| `report_type` | VARCHAR(50) | | e.g., 'comprehensive' |
+| `file_path` | TEXT | | Storage location |
+| `created_at` | DATETIME | DEFAULT NOW() | |
 
-### 1. `activity_logs.details`
-| Action | Example Structure |
-| :--- | :--- |
-| `login` | `{"ip": "1.1.1.1", "success": true}` |
-| `scan` | `{"scan_type": "ports", "target": "example.com"}` |
-| `vpn` | `{"server": "us-east", "action": "generated"}` |
+---
 
-### 2. `network_scans.results`
-Stores the output of `network_tools`.
-- `port_results`: `[{"port": 80, "state": "open", "service": "http"}]`
-- `dns_records`: `{"A": ["..."], "MX": ["..."]}`
-- `whois`: `{"registrar": "...", "expiry": "..."}`
+### 14. Password Reset Tokens (`password_reset_tokens`)
+One-time tokens for account recovery.
 
-### 3. `security_scans.results`
-- **SSL**: `{"certificate": {...}, "tls_v1_3": true, "vulnerabilities": []}`
-- **Headers**: `{"server": "nginx", "missing_headers": ["Content-Security-Policy"]}`
-- **Phishing**: `{"risk_score": 0.85, "indicators": ["typosquatting", "low_domain_age"]}`
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | VARCHAR(36) | PRIMARY KEY | |
+| `user_id` | VARCHAR(36) | FK -> users(id), ON DELETE CASCADE | |
+| `token_hash` | VARCHAR(255) | NOT NULL, INDEX | |
+| `expires_at` | DATETIME | NOT NULL | |
+| `created_at` | DATETIME | | |
 
-### 4. `malware_scans.results`
-- `virustotal`: `{"positives": 5, "total": 70, "permalink": "..."}`
-- `static_analysis`: `{"strings": ["..."], "is_packed": false}`
+---
 
-### 5. `footprint_scans.findings`
-Reference to structure in `footprint_findings` table, but also cached in `FootprintScanResult`.
-- `category`: `email_exposure`, `social_media`, `data_breach`
-- `source`: `Twitter`, `LinkedIn`, `HaveIBeenPwned`
+## JSON Structure Reference
+
+Columns with JSON type store structured metadata:
+
+1. **`activity_logs.details`**: Context like browser IP or scan target.
+2. **`network_scans.results`**: Port lists, DNS data, and raw tool output.
+3. **`security_scans.results`**: Certificate details, header analysis, and threat indicators.
+4. **`malware_scans.results`**: Vendor detection counts and sandbox behavior.
+5. **`footprint_scans.platforms_checked`**: List of social/leak sources analyzed.
