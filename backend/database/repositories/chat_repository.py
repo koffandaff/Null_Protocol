@@ -87,18 +87,49 @@ class ChatRepository(BaseRepository[ChatSession]):
         
         # Get sessions with message counts in one query
         # Get sessions with message counts in one query
+        # Use a subquery to count messages per session
+        # This avoids GROUP BY issues with full entity selection in Postgres
+        stmt = (
+            self.db.query(
+                ChatMessage.session_id, 
+                func.count(ChatMessage.id).label("count")
+            )
+            .group_by(ChatMessage.session_id)
+            .subquery()
+        )
+        
         try:
             results = (
-                self.db.query(ChatSession, func.count(ChatMessage.id).label("message_count"))
-                .outerjoin(ChatMessage)
+                self.db.query(ChatSession, func.coalesce(stmt.c.count, 0).label("message_count"))
+                .outerjoin(stmt, ChatSession.id == stmt.c.session_id)
                 .filter(ChatSession.user_id == user_id)
-                .group_by(ChatSession.id)
                 .order_by(desc(ChatSession.updated_at))
                 .all()
             )
         except Exception as e:
             print(f"DB ERROR in get_user_sessions: {e}")
-            raise e
+            # Fallback to simple query if complex one fails
+            try:
+                print("Falling back to simple query...")
+                sessions = (
+                    self.db.query(ChatSession)
+                    .filter(ChatSession.user_id == user_id)
+                    .order_by(desc(ChatSession.updated_at))
+                    .all()
+                )
+                return [
+                    {
+                        "id": s.id,
+                        "title": s.title,
+                        "created_at": s.created_at,
+                        "updated_at": s.updated_at,
+                        "message_count": len(s.messages) # N+1 query but safe fallback
+                    }
+                    for s in sessions
+                ]
+            except Exception as e2:
+                print(f"Fallback failed: {e2}")
+                raise e
         
         sessions = []
         for session, count in results:
