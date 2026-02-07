@@ -144,8 +144,10 @@ class AdminService:
                 total_reports += user.stats.reports_generated or 0
         
         # Get chat stats directly from SQL
-        total_chat_sessions = self.db.query(ChatSession).count()
-        total_chat_messages = self.db.query(ChatMessage).count()
+        # Get chat stats directly from SQL using func.count for reliability
+        from sqlalchemy import func
+        total_chat_sessions = self.db.query(func.count(ChatSession.id)).scalar()
+        total_chat_messages = self.db.query(func.count(ChatMessage.id)).scalar()
         
         return {
             'total_users': total_users,

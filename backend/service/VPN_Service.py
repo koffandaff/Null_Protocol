@@ -267,6 +267,43 @@ mute 20
         Get all files needed to set up the OpenVPN server.
         Returns dict with all PKI files for server configuration.
         """
-        return pki_manager.get_server_files()
+    def _build_mock_openvpn_config(self, server_name: str, user_id: str) -> str:
+        """
+        Build a MOCK OpenVPN configuration for environments without VPN tools.
+        """
+        return f"""# Fsociety VPN - MOCK Configuration
+# Generated: {datetime.now(timezone.utc).isoformat()}
+# Server: {server_name}
+# User: {user_id}
+# NOTICE: This is a simulation for testing/demo purposes.
+
+client
+dev tun
+proto udp
+remote mock.vpn.fsociety.dev 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+
+# Dummy Certificates
+<ca>
+-----BEGIN CERTIFICATE-----
+MIIBtzCCASwCCQDTxH... (Mock CA Certificate) ...3f5g=
+-----END CERTIFICATE-----
+</ca>
+
+<cert>
+-----BEGIN CERTIFICATE-----
+MIIBtzCCASwCCQDTxH... (Mock Client Certificate) ...3f5g=
+-----END CERTIFICATE-----
+</cert>
+
+<key>
+-----BEGIN PRIVATE KEY-----
+MIIBtzCCASwCCQDTxH... (Mock Private Key) ...3f5g=
+-----END PRIVATE KEY-----
+</key>
+"""
 
 

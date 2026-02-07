@@ -38,7 +38,7 @@ class DashboardView {
                                 <p style="color: var(--text-muted); font-size: 0.9rem; flex: 1; margin-bottom: 1.5rem;">
                                     Perform comprehensive network reconnaissance using Nmap, DNS enumeration, and Whois lookups.
                                 </p>
-                                <a href="#/scan" class="btn-outline" style="text-align: center;">Start Scan</a>
+                                <a href="#/scan" class="btn" style="text-align: center;">Start Scan</a>
                             </div>
 
                             <!-- Digital Footprint Card -->
@@ -50,7 +50,7 @@ class DashboardView {
                                 <p style="color: var(--text-muted); font-size: 0.9rem; flex: 1; margin-bottom: 1.5rem;">
                                     Analyze public exposure and OSINT data for domains and usernames. Check for data leaks.
                                 </p>
-                                <a href="#/footprint" class="btn-outline" style="text-align: center;">Analyze Footprint</a>
+                                <a href="#/footprint" class="btn" style="text-align: center;">Analyze Footprint</a>
                             </div>
                             
                             <!-- Phishing Detector -->
@@ -62,7 +62,7 @@ class DashboardView {
                                 <p style="color: var(--text-muted); font-size: 0.9rem; flex: 1; margin-bottom: 1.5rem;">
                                     Verify suspicious URLs and emails using advanced heuristics and threat intelligence.
                                 </p>
-                                <a href="#/phishing" class="btn-outline" style="text-align: center;">Check URL</a>
+                                <a href="#/phishing" class="btn" style="text-align: center;">Check URL</a>
                             </div>
                         </div>
 
