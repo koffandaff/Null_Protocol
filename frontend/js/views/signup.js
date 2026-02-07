@@ -12,6 +12,10 @@ class SignupView {
 
                 <div class="container" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 2rem 0; position: relative; z-index: 1;">
                     <div class="card glass fade-in" style="width: 100%; max-width: 450px; padding: 3rem 2rem;">
+                        <a href="#/" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 2rem; width: fit-content; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">arrow_back</span>
+                            Back to Home
+                        </a>
                         <h2 class="page-title" style="text-align: center; margin-bottom: 0.5rem;">Join Fsociety</h2>
                         <p style="text-align: center; color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.9rem;">Initialize anonymous connection.</p>
                         

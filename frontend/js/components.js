@@ -34,18 +34,23 @@ class Components {
         const user = JSON.parse(localStorage.getItem('user')) || { username: 'Guest' };
         return `
             <div class="glass" style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; z-index: 100;">
-                <a href="#/dashboard" style="text-decoration: none; display: flex; align-items: center; gap: 0rem;">
+                <a href="#/" style="text-decoration: none; display: flex; align-items: center; gap: 0rem;">
                     <span class="material-symbols-outlined" style="color: #fff; font-size: 1.8rem; margin-right: 0.5rem; text-shadow: 0 0 15px rgba(255,255,255,0.4);">security</span>
                     <span style="font-size: 1.4rem; font-weight: 800; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px;">Fsociety</span>
                     <span style="color: #fff; animation: blink 1s step-end infinite; font-weight: 300; text-shadow: 0 0 10px rgba(255,255,255,0.5);">_</span>
                 </a>
                 <div style="display: flex; gap: 1rem; align-items: center;">
-                    <a href="#/profile" class="btn-outline" style="padding: 0.25rem 0.5rem; display: flex; align-items: center; gap: 0.5rem; border: none; color: var(--text-muted);">
-                        <span class="material-symbols-outlined">account_circle</span>
-                        <span style="font-size: 0.9rem;">${user.username}</span>
-                    </a>
-                    ${user.role === 'admin' ? '<span class="badge" style="background: var(--secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: #fff;">ADMIN</span>' : ''}
-                    <button id="logout-btn" class="btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; border-color: rgba(255,255,255,0.2);">LOGOUT</button>
+                    ${user.username !== 'Guest' ? `
+                        <a href="#/profile" class="btn-outline" style="padding: 0.25rem 0.5rem; display: flex; align-items: center; gap: 0.5rem; border: none; color: var(--text-muted);">
+                            <span class="material-symbols-outlined">account_circle</span>
+                            <span style="font-size: 0.9rem;">${user.username}</span>
+                        </a>
+                        ${user.role === 'admin' ? '<span class="badge" style="background: var(--secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: #fff;">ADMIN</span>' : ''}
+                        <button id="logout-btn" class="btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; border-color: rgba(255,255,255,0.2);">LOGOUT</button>
+                    ` : `
+                        <a href="#/login" class="btn" style="padding: 0.4rem 1.2rem; font-size: 0.85rem;">LOGIN</a>
+                        <a href="#/signup" class="btn-outline" style="padding: 0.4rem 1.2rem; font-size: 0.85rem;">SIGN UP</a>
+                    `}
                 </div>
             </div>
         `;

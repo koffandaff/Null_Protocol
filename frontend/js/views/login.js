@@ -12,6 +12,10 @@ class LoginView {
 
                 <div class="container" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; position: relative; z-index: 1;">
                     <div class="card glass fade-in" style="width: 100%; max-width: 400px; padding: 3rem 2rem;">
+                        <a href="#/" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 2rem; width: fit-content; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
+                            <span class="material-symbols-outlined" style="font-size: 1rem;">arrow_back</span>
+                            Back to Home
+                        </a>
                         <h2 class="page-title" style="text-align: center; margin-bottom: 0.5rem;">Access System</h2>
                         <p style="text-align: center; color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.9rem;">Fsociety Terminal Login</p>
                         
@@ -68,22 +72,29 @@ class LoginView {
         }
 
         const form = document.getElementById('login-form');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
 
-            try {
-                const result = await Auth.login(email, password);
-                // If null, the disabled modal is already showing
-                if (result === null) return;
+                if (!emailInput || !passwordInput) return;
 
-                Utils.showToast('Access Granted', 'success');
-                Router.navigate('/dashboard');
-            } catch (error) {
-                Utils.showToast(error.message, 'error');
-            }
-        });
+                const email = emailInput.value;
+                const password = passwordInput.value;
+
+                try {
+                    const result = await Auth.login(email, password);
+                    // If null, the disabled modal is already showing
+                    if (result === null) return;
+
+                    Utils.showToast('Access Granted', 'success');
+                    Router.navigate('/dashboard');
+                } catch (error) {
+                    Utils.showToast(error.message, 'error');
+                }
+            });
+        }
     }
 }
 

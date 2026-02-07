@@ -38,14 +38,24 @@ class ChatService:
                 tags = response.json().get("models", [])
                 model_names = [m.get("name") for m in tags]
                 
+                if not model_names:
+                    return {"connected": True, "model_available": False}
+                
                 # Check for model (handle both formats if necessary)
                 model_available = any(self.model in name for name in model_names)
                 
+                if not model_available:
+                     # Fallback to the first available model
+                     print(f"Preferred model {self.model} not found. Switching to {model_names[0]}")
+                     self.model = model_names[0]
+                     model_available = True
+
                 return {
                     "connected": True, 
                     "model_available": model_available
                 }
-        except:
+        except Exception as e:
+            print(f"Ollama health check failed: {e}")
             return {"connected": False, "model_available": False}
     
     async def _stream_response(self, session_id: str, user_id: str, context: List[Dict], username: str) -> AsyncGenerator[str, None]:
@@ -107,11 +117,15 @@ class ChatService:
                     
 
         except httpx.TimeoutException:
-            yield json.dumps({"error": "Ollama request timed out"})
+            yield json.dumps({"error": "Ollama request timed out. The model is taking too long to respond."})
         except httpx.ConnectError:
-            yield json.dumps({"error": "Cannot connect to Ollama. Is it running?"})
+            yield json.dumps({"error": "Connection refused. Ensure Ollama is running on port 11434."})
+        except httpx.HTTPStatusError as e:
+            yield json.dumps({"error": f"Ollama returned HTTP {e.response.status_code}: {e.response.text}"})
         except Exception as e:
-            yield json.dumps({"error": str(e)})
+            import traceback
+            traceback.print_exc()
+            yield json.dumps({"error": f"Internal Error: {str(e)}"})
 
     async def send_message_stream(
         self, 

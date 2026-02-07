@@ -300,17 +300,22 @@ class LandingView {
 
     async afterRender() {
         // Create floating particles
-        this.createParticles();
+        if (document.getElementById('particles')) {
+            this.createParticles();
+        }
         // Start terminal animation
-        this.startTerminal();
+        if (document.getElementById('recon-terminal')) {
+            this.startTerminal();
+        }
     }
 
     createParticles() {
         const container = document.getElementById('particles');
         if (!container) return;
-
-        for (let i = 0; i < 30; i++) {
+        // Reduce particle count to improve performance
+        for (let i = 0; i < 15; i++) {
             const particle = document.createElement('div');
+            // ... (keep existing styled but cleaner) ...
             particle.style.cssText = `
                 position: absolute;
                 width: ${Math.random() * 4 + 2}px;
@@ -328,35 +333,39 @@ class LandingView {
 
     startTerminal() {
         const terminal = document.getElementById('recon-terminal');
+        if (!terminal) return;
+
+        let isActive = true;
+        // Simple cleanup check if terminal is removed from DOM to stop loop
+        const observer = new MutationObserver((mutations) => {
+            if (!document.contains(terminal)) {
+                isActive = false;
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
         const logs = [
-            { type: 'info', msg: 'Initializing Fsociety Core v2.4.0...' },
-            { type: 'success', msg: 'Connected to Secure Gateway (10.8.0.1)' },
-            { type: 'info', msg: 'Run: <span style="color: #fff">fsociety scan --target 192.168.1.100</span>' },
-            { type: 'warning', msg: 'Port Scanning: Discovered open ports [80, 443, 22]' },
-            { type: 'info', msg: 'Analyzing SSL/TLS headers...' },
-            { type: 'success', msg: 'Header Security: A+ Rating' },
-            { type: 'info', msg: 'Run: <span style="color: #fff">fsociety phishing --check url</span>' },
-            { type: 'error', msg: 'Phishing Detected: Malicious pattern found in domain' },
-            { type: 'info', msg: 'Generating OpenVPN Configuration...' },
-            { type: 'success', msg: 'VPN Config exported: client.ovpn' },
-            { type: 'info', msg: 'Digital Footprint: Searching public leaks...' },
-            { type: 'warning', msg: 'OSINT: 2 Potential credential leaks found' },
-            { type: 'success', msg: 'System Status: Optimal. Ready for command.' }
+            { type: 'info', msg: 'Initializing Fsociety Core...' },
+            { type: 'success', msg: 'System Online' },
+            { type: 'info', msg: 'Ready for scanning.' }
         ];
+        // Reduced logs for cleaner look and performance
 
         let i = 0;
         const addLog = () => {
+            if (!isActive || !document.getElementById('recon-terminal')) return;
+
             const entry = logs[i % logs.length];
             const line = document.createElement('div');
             line.style.marginBottom = '0.5rem';
-            line.style.opacity = '0';
             line.style.animation = 'fadeIn 0.3s forwards';
 
+            // ... (keep logging logic simple)
             let icon = '$';
             let color = 'var(--primary)';
 
             if (entry.type === 'error') { icon = '✖'; color = '#ff4757'; }
-            if (entry.type === 'warning') { icon = '⚠'; color = '#ffbd2e'; }
             if (entry.type === 'success') { icon = '✓'; color = '#2ed573'; }
 
             const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
@@ -368,16 +377,13 @@ class LandingView {
             `;
 
             terminal.appendChild(line);
-
-            if (terminal.children.length > 9) {
+            if (terminal.children.length > 5) {
                 terminal.removeChild(terminal.firstChild);
             }
-
-            // Scroll to bottom
             terminal.scrollTop = terminal.scrollHeight;
 
             i++;
-            setTimeout(addLog, Math.random() * 1500 + 800);
+            setTimeout(addLog, 2000);
         };
 
         addLog();

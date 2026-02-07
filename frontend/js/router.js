@@ -106,8 +106,15 @@ class Router {
             return;
         }
 
+        // Cleanup previous view if it has a destroy method
+        if (this.currentView && typeof this.currentView.destroy === 'function') {
+            this.currentView.destroy();
+        }
+
         try {
+            // Render new view
             this.app.innerHTML = await route.view.render();
+            this.currentView = route.view; // Track current view
 
             // Inject floating chat widget on authenticated pages (except chat page itself)
             if (route.requiresAuth && path !== '/chat') {

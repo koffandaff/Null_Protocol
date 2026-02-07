@@ -465,7 +465,22 @@ class ChatView {
                         }
 
                         if (data.error) {
-                            messageTextEl.innerHTML = `<span style="color: #ff4757;"><i class="material-symbols-outlined" style="vertical-align: middle;">error</i> ${data.error}</span>`;
+                            const errorHtml = `
+                                <div style="color: #ff4757; background: rgba(255, 71, 87, 0.1); padding: 0.5rem; border-radius: 6px; margin-top: 0.5rem; border: 1px solid rgba(255, 71, 87, 0.3);">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: bold; font-size: 0.85rem;">
+                                        <i class="material-symbols-outlined" style="font-size: 1rem;">error_outline</i>
+                                        System Error
+                                    </div>
+                                    <div style="font-size: 0.8rem; margin-top: 0.25rem; opacity: 0.9;">${data.error}</div>
+                                </div>
+                            `;
+                            // Append error instead of replacing if we already have content
+                            if (fullContent) {
+                                messageTextEl.insertAdjacentHTML('beforeend', errorHtml);
+                            } else {
+                                messageTextEl.innerHTML = errorHtml;
+                            }
+                            Utils.showToast('Chat Error: ' + data.error, 'error');
                         }
 
                         if (data.type === 'done') {
