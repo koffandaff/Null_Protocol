@@ -28,9 +28,9 @@ class ContactView {
                                 For support, security reports, or business inquiries, please reach out to our team directly.
                             </p>
                             
-                            <a href="mailto:dhruvil@fsociety.com" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.1); padding: 1rem 2rem; border-radius: 50px; text-decoration: none; color: #fff; border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s;">
+                            <a href="mailto:reconauto@gmail.com" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.1); padding: 1rem 2rem; border-radius: 50px; text-decoration: none; color: #fff; border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s;">
                                 <span class="material-symbols-outlined">email</span>
-                                <span style="font-size: 1.1rem; font-weight: 500;">dhruvil@fsociety.com</span>
+                                <span style="font-size: 1.1rem; font-weight: 500;">reconauto@gmail.com</span>
                             </a>
                         </div>
                     </div>

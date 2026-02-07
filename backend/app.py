@@ -50,7 +50,8 @@ async def log_requests(request: Request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        'https://supercommercial-cataclysmic-cayla.ngrok-free.dev',
+        "https://reconauto.vercel.app",
+        "https://reconauto-backend.vercel.app",
         "http://localhost:5500",
         "http://127.0.0.1:5500",
         "http://localhost:8000",
