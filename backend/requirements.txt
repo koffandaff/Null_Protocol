@@ -34,8 +34,8 @@ dnspython
 python-whois
 
 # File Analysis
-python-magic-bin
-yara-python
+python-magic
+# yara-python  # Disabled: requires C compiler on Linux
 
 # Email (for OTP)
 aiosmtplib
