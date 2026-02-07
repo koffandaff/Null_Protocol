@@ -64,7 +64,19 @@ class ChatSessionDetail(BaseModel):
 
 class ChatDatabase:
     def __init__(self, db_path: str = "data/chat_sessions.json"):
+        # Detect if running in Vercel/Read-only environment
         self.db_path = db_path
+        
+        # Check if we can write to the target directory
+        full_path = os.path.abspath(db_path)
+        dir_name = os.path.dirname(full_path)
+        
+        # If directory exists but is not writable, or if we can't create it
+        if (os.path.exists(dir_name) and not os.access(dir_name, os.W_OK)) or \
+           (not os.path.exists(dir_name) and not os.access(os.path.dirname(dir_name) or '.', os.W_OK)):
+            print(f"Warning: {dir_name} is read-only. Switching to /tmp storage.")
+            self.db_path = "/tmp/chat_sessions.json"
+            
         self._ensure_db_exists()
     
     def _ensure_db_exists(self):
