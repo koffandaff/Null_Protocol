@@ -269,10 +269,10 @@ mute 20
             VPNConfigResponse(
                 id=c.id,
                 user_id=c.user_id,
-                type=c.config_type,  # Map config_type to type
-                name=c.filename or f"VPN-{c.server_id}", # Map filename or server_id to name
+                type=c.config_type or "openvpn",  # Fallback to openvpn if None
+                name=c.filename or f"VPN-{c.server_id or 'Unknown'}", # Fallback name
                 filename=c.filename,
-                config_content=c.config_content,
+                config_content=c.config_content or "", # Fallback content
                 created_at=c.created_at
             )
             for c in configs

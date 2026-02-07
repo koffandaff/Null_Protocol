@@ -536,6 +536,34 @@ class AdminView {
         }
     }
 
+    // ==================== USER ACTIONS ====================
+    async toggleUserStatus(userId, isActive) {
+        try {
+            const action = isActive ? 'enable' : 'disable';
+            if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+            await Api.post(`/admin/users/${userId}/status`, { is_active: isActive });
+            Utils.showToast(`User ${action}d successfully`, 'success');
+            this.loadUsers(); // Refresh list
+        } catch (e) {
+            console.error('Failed to update user status:', e);
+            Utils.showToast('Failed to update user status', 'error');
+        }
+    }
+
+    async deleteUser(userId) {
+        try {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+
+            await Api.delete(`/admin/users/${userId}`);
+            Utils.showToast('User deleted successfully', 'success');
+            this.loadUsers(); // Refresh list
+        } catch (e) {
+            console.error('Failed to delete user:', e);
+            Utils.showToast('Failed to delete user', 'error');
+        }
+    }
+
     // ==================== PAGINATION LOGIC ====================
     initActivityPagination() {
         this.currentActivityPage = 1;
