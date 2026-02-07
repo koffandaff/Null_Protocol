@@ -173,9 +173,15 @@ Your Role:
             # Add user message to database for existing session
             self.db.add_message(session_id, user_id, "user", message)
         else:
-            # Create new session (creates message internally)
-            session = self.db.create_session(user_id, message)
+            # Create new session
+            # Use truncated message as title
+            title = message[:40] + "..." if len(message) > 40 else message
+            session = self.db.create_session(user_id, title=title)
             session_id = session.id
+            
+            # Save the initial user message!
+            self.db.add_message(session_id, user_id, "user", message)
+            
             yield json.dumps({"session_id": session_id, "type": "session_created"})
         
         # Get context messages for Ollama (Increased Limit)

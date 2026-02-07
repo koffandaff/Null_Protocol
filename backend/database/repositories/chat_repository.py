@@ -17,6 +17,54 @@ class ChatRepository(BaseRepository[ChatSession]):
     
     def __init__(self, db: Session):
         super().__init__(db)
+
+    # ==================== BaseRepository Implementation ====================
+
+    def create(self, data: Dict[str, Any]) -> ChatSession:
+        """Create a new chat session from dictionary data"""
+        return self.create_session(
+            user_id=data.get("user_id"),
+            title=data.get("title", "New Chat")
+        )
+
+    def get_by_id(self, id: str) -> Optional[ChatSession]:
+        """Get session by ID (admin use mostly)"""
+        return self.db.query(ChatSession).filter(ChatSession.id == id).first()
+
+    def get_all(self, limit: int = 100, skip: int = 0) -> List[ChatSession]:
+        """Get all sessions (admin use)"""
+        return (
+            self.db.query(ChatSession)
+            .order_by(desc(ChatSession.updated_at))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def update(self, id: str, data: Dict[str, Any]) -> Optional[ChatSession]:
+        """Update session details"""
+        session = self.get_by_id(id)
+        if not session:
+            return None
+            
+        for key, value in data.items():
+            if hasattr(session, key):
+                setattr(session, key, value)
+        
+        session.updated_at = datetime.now(timezone.utc)
+        self.db.commit()
+        self.db.refresh(session)
+        return session
+
+    def delete(self, id: str) -> bool:
+        """Delete session by ID"""
+        session = self.get_by_id(id)
+        if not session:
+            return False
+        
+        self.db.delete(session)
+        self.db.commit()
+        return True
     
     # ==================== Session Operations ====================
     
@@ -38,14 +86,19 @@ class ChatRepository(BaseRepository[ChatSession]):
         from sqlalchemy import func
         
         # Get sessions with message counts in one query
-        results = (
-            self.db.query(ChatSession, func.count(ChatMessage.id).label("message_count"))
-            .outerjoin(ChatMessage)
-            .filter(ChatSession.user_id == user_id)
-            .group_by(ChatSession.id)
-            .order_by(desc(ChatSession.updated_at))
-            .all()
-        )
+        # Get sessions with message counts in one query
+        try:
+            results = (
+                self.db.query(ChatSession, func.count(ChatMessage.id).label("message_count"))
+                .outerjoin(ChatMessage)
+                .filter(ChatSession.user_id == user_id)
+                .group_by(ChatSession.id)
+                .order_by(desc(ChatSession.updated_at))
+                .all()
+            )
+        except Exception as e:
+            print(f"DB ERROR in get_user_sessions: {e}")
+            raise e
         
         sessions = []
         for session, count in results:

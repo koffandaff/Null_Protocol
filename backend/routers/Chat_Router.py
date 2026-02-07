@@ -34,8 +34,14 @@ async def get_sessions(
     chat_service: ChatService = Depends(get_chat_service)
 ):
     """Get all chat sessions for the current user"""
-    sessions = chat_service.get_user_sessions(current_user["id"])
-    return sessions
+    try:
+        sessions = chat_service.get_user_sessions(current_user["id"])
+        return sessions
+    except Exception as e:
+        print(f"ERROR: get_sessions failed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/sessions", response_model=ChatSessionResponse)
