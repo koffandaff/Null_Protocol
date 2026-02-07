@@ -495,10 +495,10 @@ class AdminView {
                             ${user.role.toUpperCase()}
                         </span>
                         <span style="font-size: 0.75rem; color: ${user.is_active ? 'var(--primary)' : '#ff4757'};">● ${user.is_active ? 'Active' : 'Inactive'}</span>
-                        <button class="btn-outline action-btn" onclick="adminView.toggleUserStatus('${user.id}', ${!user.is_active})">
+                        <button class="btn-outline action-btn" onclick="adminView.confirmToggleStatus('${user.id}', ${!user.is_active}, '${Utils.escapeHtml(user.username || 'User')}')">
                             ${user.is_active ? 'Disable' : 'Enable'}
                         </button>
-                        <button class="btn-outline action-btn" style="border-color: #ff4757; color: #ff4757;" onclick="adminView.deleteUser('${user.id}')">
+                        <button class="btn-outline action-btn" style="border-color: #ff4757; color: #ff4757;" onclick="adminView.confirmDeleteUser('${user.id}', '${Utils.escapeHtml(user.username || 'User')}')">
                             Delete
                         </button>
                     </div>
@@ -537,27 +537,75 @@ class AdminView {
     }
 
     // ==================== USER ACTIONS ====================
-    async toggleUserStatus(userId, isActive) {
-        try {
-            const action = isActive ? 'enable' : 'disable';
-            if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+    // ==================== USER ACTIONS ====================
 
-            await Api.post(`/admin/users/${userId}/status`, { is_active: isActive });
-            Utils.showToast(`User ${action}d successfully`, 'success');
-            this.loadUsers(); // Refresh list
+    // Stage 1: Show Confirmation Modal
+    confirmToggleStatus(userId, isActive, username) {
+        const action = isActive ? 'enable' : 'disable';
+        const color = isActive ? 'var(--primary)' : '#ff4757';
+
+        const content = `Are you sure you want to <strong style="color: ${color}">${action}</strong> user <strong>${username}</strong>?`;
+        const actions = `
+            <button class="btn-outline" onclick="Components.hideModal('confirm-modal')">Cancel</button>
+            <button class="btn" style="background: ${color}; color: #000;" onclick="adminView.executeToggleStatus('${userId}', ${isActive})">
+                Yes, ${action.toUpperCase()}
+            </button>
+        `;
+
+        const modalHtml = Components.renderModal('confirm-modal', 'Confirm Action', content, actions);
+
+        // Append modal to body if it doesn't exist, else update it
+        let modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) {
+            modalContainer = document.createElement('div');
+            modalContainer.id = 'modal-container';
+            document.body.appendChild(modalContainer);
+        }
+        modalContainer.innerHTML = modalHtml;
+
+        Components.showModal('confirm-modal');
+    }
+
+    // Stage 2: Execute Action
+    async executeToggleStatus(userId, isActive) {
+        try {
+            Components.hideModal('confirm-modal');
+            await Api.put(`/admin/users/${userId}`, { is_active: isActive });
+            Utils.showToast(`User status updated successfully`, 'success');
+            this.loadUsers();
         } catch (e) {
             console.error('Failed to update user status:', e);
             Utils.showToast('Failed to update user status', 'error');
         }
     }
 
-    async deleteUser(userId) {
-        try {
-            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    confirmDeleteUser(userId, username) {
+        const content = `Are you sure you want to delete user <strong>${username}</strong>? <br><br> <span style="color: #ff4757;">⚠ This action cannot be undone. All associated data (scans, chats, vpn configs) will be permanently removed.</span>`;
+        const actions = `
+            <button class="btn-outline" onclick="Components.hideModal('delete-modal')">Cancel</button>
+            <button class="btn" style="background: #ff4757; color: #fff;" onclick="adminView.executeDeleteUser('${userId}')">
+                DELETE PERMANENTLY
+            </button>
+        `;
 
+        const modalHtml = Components.renderModal('delete-modal', 'Delete User', content, actions);
+        let modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) {
+            modalContainer = document.createElement('div');
+            modalContainer.id = 'modal-container';
+            document.body.appendChild(modalContainer);
+        }
+        modalContainer.innerHTML = modalHtml;
+
+        Components.showModal('delete-modal');
+    }
+
+    async executeDeleteUser(userId) {
+        try {
+            Components.hideModal('delete-modal');
             await Api.delete(`/admin/users/${userId}`);
             Utils.showToast('User deleted successfully', 'success');
-            this.loadUsers(); // Refresh list
+            this.loadUsers();
         } catch (e) {
             console.error('Failed to delete user:', e);
             Utils.showToast('Failed to delete user', 'error');

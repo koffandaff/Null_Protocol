@@ -80,6 +80,39 @@ class Components {
     }
 }
 
+    static renderModal(id, title, content, actions) {
+    return `
+            <div id="${id}" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center;">
+                <div class="card glass modal-content" style="max-width: 500px; width: 90%; animation: slideIn 0.3s ease;">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                        ${title}
+                    </h3>
+                    <div style="margin-bottom: 1.5rem; color: var(--text-main); line-height: 1.6;">
+                        ${content}
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                        ${actions}
+                    </div>
+                </div>
+            </div>
+        `;
+}
+
+    static showModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+    static hideModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+}
+
 export default Components;
 
 
