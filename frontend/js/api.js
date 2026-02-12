@@ -41,7 +41,13 @@ class Api {
         }
 
         try {
+            // Add 15s timeout to prevent hanging
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 15000);
+            config.signal = controller.signal;
+
             const response = await fetch(`${API_URL}${endpoint}`, config);
+            clearTimeout(id);
 
             // Handle Unauthorized (Token Expired)
             if (response.status === 401) {

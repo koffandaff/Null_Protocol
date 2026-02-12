@@ -112,20 +112,15 @@ class ChatView {
     }
 
     async afterRender() {
+        // 1. Attach ALL Event Listeners FIRST (Critical for UI responsiveness)
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
-
-        // Load sessions and check Ollama
-        await this.loadSessions();
-        await this.checkOllamaStatus();
-
-        // Check if view is still active (simple check)
-        if (!document.getElementById('new-chat-btn')) return;
 
         // Mobile Sidebar Close
         const closeSidebarBtn = document.getElementById('close-sidebar-btn');
         if (closeSidebarBtn) {
             closeSidebarBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent default anchor behavior
                 e.stopPropagation(); // Prevent bubbling
                 document.getElementById('chat-sidebar').classList.remove('show-mobile');
             });
@@ -297,6 +292,13 @@ class ChatView {
                 };
             }
         }, 100);
+
+        // 2. Load Data in Background (Non-blocking)
+        // We do NOT await here so the UI remains interactive immediately
+        Promise.allSettled([
+            this.loadSessions(),
+            this.checkOllamaStatus()
+        ]).catch(err => console.error("Background data load failed", err));
     }
 
     async loadSession(sessionId) {

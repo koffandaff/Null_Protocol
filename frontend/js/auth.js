@@ -26,12 +26,19 @@ class Auth {
     }
 
     static logout() {
-        // Call backend to clear cookie
-        Api.post('/auth/logout');
-
+        // Optimistic Logout: Clear state immediately for UI responsiveness
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
+
+        // Fire-and-forget backend call (don't await)
+        try {
+            Api.post('/auth/logout').catch(err => console.warn('Logout API failed:', err));
+        } catch (e) {
+            // Ignore errors
+        }
+
         window.location.hash = '/login';
+        window.location.reload(); // Force reload to clear memory/states
     }
 
     static isAuthenticated() {
