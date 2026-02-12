@@ -16,7 +16,7 @@ class SecurityView {
                     </div>
                     
                     <div class="card glass fade-in" style="max-width: 900px; margin-bottom: 2rem;">
-                        <form id="security-form" style="display: grid; grid-template-columns: 2fr 4fr 1fr; gap: 1rem; align-items: end;">
+                        <form id="security-form">
                             <div>
                                 <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.8rem;">AUDIT VECTOR</label>
                                 <select id="sec-type" style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">

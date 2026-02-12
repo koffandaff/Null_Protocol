@@ -71,17 +71,32 @@ app.add_middleware(
 # User:  mrrobot@fsociety.com / Elliot123!
 @app.on_event("startup")
 async def startup_event():
-    from database.engine import init_db, get_db_context
-    from database.seed import seed_database
-    
-    # Initialize database (create tables)
-    init_db()
-    
-    # Seed with initial data
-    with get_db_context() as db:
-        seed_database(db)
-    
-    print("[STARTUP] Database initialized and seeded")
+    try:
+        from database.engine import init_db, get_db_context
+        from database.seed import seed_database
+        
+        # Initialize database (create tables)
+        init_db()
+        
+        # Seed with initial data
+        with get_db_context() as db:
+            seed_database(db)
+        
+        print("[STARTUP] Database initialized and seeded")
+    except Exception as e:
+        print(f"[STARTUP CRITICAL ERROR] Database initialization failed: {e}")
+        # We don't raise here to allow the app to start (e.g. for health checks)
+        # requests requiring DB will fail gracefully via normal handlers
+
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    from fastapi.responses import Response
+    return Response(status_code=204)
+
+@app.get('/favicon.png', include_in_schema=False)
+async def favicon_png():
+    from fastapi.responses import Response
+    return Response(status_code=204)
 
 # Include routers
 app.include_router(Auth_Router.router, prefix='/api/auth', tags=['Authentication'])

@@ -16,7 +16,7 @@ class PhishingView {
                     </div>
                     
                     <div class="card glass fade-in" style="max-width: 900px; margin-bottom: 2rem;">
-                        <form id="phishing-form" style="display: grid; grid-template-columns: 4fr 1fr; gap: 1rem; align-items: end;">
+                        <form id="phishing-form">
                             <div>
                                 <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.8rem;">TARGET URL</label>
                                 <input type="text" id="phishing-target" required placeholder="https://fsociety.login-safe.com" 

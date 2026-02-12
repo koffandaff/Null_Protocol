@@ -597,26 +597,6 @@ input:focus {
         padding: 0 1rem !important;
     }
 
-    .navbar-brand-text {
-        font-size: 1rem !important;
-        margin-right: auto;
-        /* Pushes everything else to the right */
-    }
-
-    .app-navbar {
-        justify-content: space-between !important;
-        gap: 0.5rem;
-    }
-
-    .navbar-username {
-        display: none;
-        /* Hide username text on mobile to save space */
-    }
-
-    .navbar-profile-link {
-        padding: 0.25rem !important;
-    }
-
     /* Navbar Flex Fixes */
     .app-navbar {
         display: flex !important;
@@ -634,6 +614,30 @@ input:focus {
 
     .navbar-actions {
         display: none !important;
+    }
+
+    /* DESKTOP FORM LAYOUTS (Default) */
+    /* Moved from inline JS to support mobile override */
+    #phishing-form {
+        display: grid;
+        grid-template-columns: 4fr 1fr;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    #security-form {
+        display: grid;
+        grid-template-columns: 2fr 4fr 1fr;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    /* Default Chat Sidebar (Desktop) */
+    /* Mobile rule overrides this with display: none */
+    .chat-sidebar {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     /* Global: Force specific control containers to stack vertically */
@@ -759,20 +763,19 @@ input:focus {
 
     .chat-sidebar {
         display: none !important;
-    }
-
-    .chat-sidebar.show-mobile {
-        display: flex !important;
+        /* Default hidden on mobile unless overridden */
         position: fixed;
-        /* Changed from absolute to fixed for better stability */
         top: 60px;
         left: 0;
         width: 100% !important;
         height: calc(100vh - 60px) !important;
         background: #0f0f13 !important;
-        background: #0f0f13 !important;
-        z-index: 900;
-        /* Below Navbar (1000) but above content */
+        z-index: 2000;
+        /* High z-index to overlay everything */
+    }
+
+    .chat-sidebar.show-mobile {
+        display: flex !important;
         animation: slideInLeft 0.3s ease;
     }
 
@@ -784,6 +787,25 @@ input:focus {
         to {
             transform: translateX(0);
         }
+    }
+
+    /* Override Desktop Styles for Sidebar */
+    /* This ensures inline styles don't bleed through on mobile */
+    .chat-sidebar-desktop {
+        /* This class will be added dynamically or used via JS */
+    }
+
+    /* Layout Logic */
+    /* Mobile: Stack vertically */
+    .mobile-vertical-stack {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+
+    .mobile-vertical-stack>* {
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
     }
 
     .chat-main {

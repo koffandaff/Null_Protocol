@@ -17,7 +17,7 @@ class ChatView {
             ${Components.renderNavbar()}
             <div class="chat-container" style="display: flex; height: 100vh; padding-top: 60px;">
                 <!-- Sidebar: Session List -->
-                <div id="chat-sidebar" class="chat-sidebar glass" style="width: 280px; background: rgba(0,0,0,0.4); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; overflow: hidden;">
+                <div id="chat-sidebar" class="chat-sidebar glass" style="width: 280px; background: rgba(0,0,0,0.4); border-right: 1px solid rgba(255,255,255,0.05);">
                     <!-- Sidebar Header (Mobile Only) -->
                     <div class="sidebar-header mobile-only" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <span style="font-weight: bold; color: var(--text-main);">Chats</span>

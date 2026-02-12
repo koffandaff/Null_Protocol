@@ -103,14 +103,21 @@ async def logout(
         refresh_token = request.cookies.get("refresh_token")
         
         if refresh_token:
-            auth_service.logout(current_user['id'], refresh_token)
+            try:
+                auth_service.logout(current_user['id'], refresh_token)
+            except Exception as inner_e:
+                # Log error but don't fail the request (token might be invalid already)
+                print(f"[AUTH] Logout Warning: {str(inner_e)}")
             
-        # Clear cookie
+        # Clear cookie regardless of backend success
         response.delete_cookie(key="refresh_token")
         
         return {"message": "Successfully logged out"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Catch-all to prevent 500 errors on logout
+        print(f"[AUTH] Logout Error (Recovered): {str(e)}")
+        response.delete_cookie(key="refresh_token")
+        return {"message": "Logged out (with warnings)"}
 
 
 @router.post('/refresh', response_model=Token)
